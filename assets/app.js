@@ -16,6 +16,7 @@ function openCase(){
 }
 function reset(){stickers=[];drag=null;pinching=false;film.querySelectorAll('button').forEach(b=>b.classList.remove('used'));}
 for(let i=0;i<9;i++){
+ const rear=document.createElement('span');rear.innerHTML='<img src="assets/strawberry.svg" alt="">';$('#rear-film').append(rear);
  const b=document.createElement('button');b.ariaLabel=`딸기 스티커 ${i+1} 집기`;b.innerHTML='<img src="assets/strawberry.svg" alt="딸기">';film.append(b);
  b.addEventListener('pointerdown',e=>{if(drag||performance.now()<filmReadyAt||!stickerExposed(b))return;e.preventDefault();pointerId=e.pointerId;b.setPointerCapture(e.pointerId);pick(b,local(e.clientX,e.clientY));});
  b.addEventListener('pointermove',e=>{if(pointerId===e.pointerId&&drag)drag.p=local(e.clientX,e.clientY);});
@@ -36,7 +37,7 @@ function stickerExposed(button){
  const r=button.getBoundingClientRect(), sheet=film.getBoundingClientRect();
  return r.top+r.height/2 < sheet.top+sheet.height*2/3;
 }
-function pick(button,p){if(drag)return;button.classList.add('used');drag={button,p,size:Math.min(64,stage.clientWidth*.09)};}
+function pick(button,p){if(drag)return;button.classList.add('used');drag={button,p,size:Math.min(48,stage.clientWidth*.0675)};}
 function cancelDrag(){if(drag)drag.button.classList.remove('used');drag=null;}
 function drop(){
  if(!drag)return;
