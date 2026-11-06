@@ -63,12 +63,36 @@ function pick(button,p){
  const size=Math.min(rect.width,rect.height/ratio);
  button.classList.add('used');drag={button,p,size,kind};
 }
-function cancelDrag(){if(drag)drag.button.classList.remove('used');drag=null;}
+function stickerPosition(sticker,base=basis()){
+ const c=Math.cos(base.angle),s=Math.sin(base.angle),anchor=face[sticker.index];
+ return{x:anchor.x+(sticker.u*c-sticker.v*s)*base.size,y:anchor.y+(sticker.u*s+sticker.v*c)*base.size};
+}
+function pickPlaced(p){
+ const base=basis();if(!base||drag)return false;
+ for(const sticker of [...stickers].reverse()){
+  const center=stickerPosition(sticker,base),angle=base.angle-Math.PI,c=Math.cos(angle),s=Math.sin(angle);
+  const dx=p.x-center.x,dy=p.y-center.y,size=sticker.size*base.size,ratio=sticker.kind==='berry'?1.2:.6;
+  if(Math.abs(dx*c+dy*s)<=size/2+12&&Math.abs(-dx*s+dy*c)<=size*ratio/2+12){
+   drag={existing:sticker,p:center,size,kind:sticker.kind,offset:{x:center.x-p.x,y:center.y-p.y},angle};
+   message('Move the sticker, then release to place it.');return true;
+  }
+ }
+ return false;
+}
+function moveDrag(p){if(drag)drag.p={x:p.x+(drag.offset?.x||0),y:p.y+(drag.offset?.y||0)};}
+function cancelDrag(){if(drag?.button)drag.button.classList.remove('used');drag=null;}
+stage.addEventListener('pointerdown',e=>{
+ if(e.target.closest('button,a')||pointerId!==null||!pickPlaced(local(e.clientX,e.clientY)))return;
+ pointerId=e.pointerId;stage.setPointerCapture(e.pointerId);e.preventDefault();
+});
+stage.addEventListener('pointermove',e=>{if(pointerId===e.pointerId&&drag?.existing)moveDrag(local(e.clientX,e.clientY));});
+stage.addEventListener('pointerup',e=>{if(pointerId===e.pointerId&&drag?.existing){moveDrag(local(e.clientX,e.clientY));drop();pointerId=null;}});
+stage.addEventListener('pointercancel',e=>{if(pointerId===e.pointerId&&drag?.existing){cancelDrag();pointerId=null;}});
 function drop(){
  if(!drag)return;
  const base=basis();
  if(base){
-  if(drag.kind==='patch'||drag.kind==='patch-flipped'){
+  if(!drag.existing&&(drag.kind==='patch'||drag.kind==='patch-flipped')){
    const first=stickers.find(s=>s.kind==='patch'||s.kind==='patch-flipped');
    if(first){
     const c=Math.cos(base.angle),s=Math.sin(base.angle),anchor=face[first.index];
@@ -83,7 +107,8 @@ function drop(){
   const inside=drag.p.x>=Math.min(...xs)&&drag.p.x<=Math.max(...xs)&&drag.p.y>=Math.min(...ys)&&drag.p.y<=Math.max(...ys);
   if(inside&&nearest<base.size*.45){
    const dx=drag.p.x-face[index].x,dy=drag.p.y-face[index].y,c=Math.cos(base.angle),s=Math.sin(base.angle);
-   stickers.push({index,u:(dx*c+dy*s)/base.size,v:(-dx*s+dy*c)/base.size,size:drag.size/base.size,kind:drag.kind});
+   const placement={index,u:(dx*c+dy*s)/base.size,v:(-dx*s+dy*c)/base.size,size:drag.size/base.size,kind:drag.kind};
+   if(drag.existing)Object.assign(drag.existing,placement);else stickers.push(placement);
    drag=null;message('Sticker applied! Pick up another sticker and try it on.');return;
   }
  }
@@ -114,6 +139,7 @@ function gesture(now){
  const releaseRatio=drag?.kind?.startsWith('patch') ? .40 : .48;
  const next=pinching?ratio<releaseRatio:ratio<.30;
  cursor.classList.toggle('pinching',next);
+ if(next&&!pinching&&!drag)pickPlaced(p);
  if(lip.gesture(p,next,pinching,!!drag)){pinching=next;return;}
  if(!open){
   const palm=h[9],r=caseButton.getBoundingClientRect(),q=stage.getBoundingClientRect();
@@ -130,7 +156,7 @@ function gesture(now){
  if(next&&!pinching&&!drag){
   for(const b of document.querySelectorAll('#film button:not(.used), #patch-tray button:not(.used)')){if(!stickerExposed(b))continue;const r=b.getBoundingClientRect(),s=stage.getBoundingClientRect();if(p.x>=r.left-s.left-10&&p.x<=r.right-s.left+10&&p.y>=r.top-s.top-10&&p.y<=r.bottom-s.top+10){pick(b,p);break;}}
  }
- if(drag&&next)drag.p=p;
+ if(drag&&next)moveDrag(p);
  if(pinching&&!next&&drag)drop();
  pinching=next;
 }
@@ -155,8 +181,8 @@ function render(now){
   }catch(e){tracking.textContent='인식이 잠시 멈췄어요. 카메라를 다시 켜주세요';handModel.close();faceModel.close();handModel=faceModel=null;cancelDrag();cursor.hidden=true;}
  }
  ctx.clearRect(0,0,canvas.width,canvas.height);
- const b=basis();if(b)for(const s of stickers){const c=Math.cos(b.angle),sn=Math.sin(b.angle),p=face[s.index];drawSticker({x:p.x+(s.u*c-s.v*sn)*b.size,y:p.y+(s.u*sn+s.v*c)*b.size},s.size*b.size,b.angle-Math.PI,s.kind);}
- if(drag)drawSticker(drag.p,drag.size,0,drag.kind);
+ const b=basis();if(b)for(const s of stickers){if(drag?.existing===s)continue;const c=Math.cos(b.angle),sn=Math.sin(b.angle),p=face[s.index];drawSticker({x:p.x+(s.u*c-s.v*sn)*b.size,y:p.y+(s.u*sn+s.v*c)*b.size},s.size*b.size,b.angle-Math.PI,s.kind);}
+ if(drag)drawSticker(drag.p,drag.size,drag.angle||0,drag.kind);
  lip.draw(ctx,now);
  recording.draw();
  raf=requestAnimationFrame(render);
