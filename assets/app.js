@@ -36,7 +36,15 @@ function basis(){if(!face.length)return null;const a=face[33],b=face[263];const 
 function stickerExposed(button){
  return open && !film.hidden && !button.classList.contains('used');
 }
-function pick(button,p){if(drag)return;button.classList.add('used');drag={button,p,size:Math.min(48,stage.clientWidth*.0675)};}
+function pick(button,p){
+ if(drag)return;
+ const image=button.querySelector('img');
+ const rect=image.getBoundingClientRect();
+ // Match the contained 100 × 120 SVG, including any letterboxing.
+ const size=Math.min(rect.width,rect.height/1.2);
+ button.classList.add('used');
+ drag={button,p,size};
+}
 function cancelDrag(){if(drag)drag.button.classList.remove('used');drag=null;}
 function drop(){
  if(!drag)return;
