@@ -131,7 +131,7 @@ function initRobeTracking(){
   if(worker!==poseWorker)return;
   if(data.type==='ready'){poseReady=true;return;}
   poseBusy=false;
-  if(data.type==='result'&&data.session===session&&stream)pose=data.landmarks.map(map);
+  if(data.type==='result'&&data.session===session&&stream)pose=data.landmarks.map(p=>({...map(p),z:p.z??0}));
   if(data.type==='error'){pose=[];poseReady=false;worker.terminate();poseWorker=null;console.warn('Robe tracking unavailable:',data.message);}
  };
  worker.onerror=()=>{if(worker!==poseWorker)return;pose=[];poseReady=false;poseBusy=false;worker.terminate();poseWorker=null;};

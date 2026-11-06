@@ -1,10 +1,12 @@
+import {createArmProcessor} from './arm-occlusion.js';
 import {createNeckProcessor} from './neck-mask-core.js';
-const processor=createNeckProcessor();
+const processor=createNeckProcessor(),armProcessor=createArmProcessor();
 self.onmessage=({data})=>{
- const {image,stage,face,center,span,anchor}=data;
+ const {image,stage,face,center,span,anchor,arms=[]}=data;
  try{
   const mask=processor.process(image,stage,face,center,span);
-  if(mask){mask.anchor=anchor;self.postMessage({mask},[mask.image]);}
-  else self.postMessage({mask:null});
+  if(mask)mask.anchor=anchor;
+  const armMasks=armProcessor.process(image,stage,face,arms);
+  self.postMessage({mask,arms:armMasks},[...(mask?[mask.image]:[]),...armMasks.map(p=>p.image)]);
  }finally{image.close();}
 };

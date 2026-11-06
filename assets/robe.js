@@ -167,7 +167,7 @@ export function createRobe(){
    oval.forEach((index,i)=>{const p=face[index],next=face[oval[(i+1)%oval.length]];ctx.quadraticCurveTo(p.x,p.y,(p.x+next.x)/2,(p.y+next.y)/2);});
    ctx.closePath();ctx.fill();ctx.stroke();
    // Open the back collar below the jaw as well, preserving the real neck.
-   const skinDetected=neckMask.erase(ctx,video,stage,face,center,span);
+   const skinDetected=neckMask.erase(ctx,video,stage,face,center,span,smooth,hands);
    if(!skinDetected){
    const chin=face[152],forehead=face[10],left=face[234],right=face[454];
    const faceWidth=Math.hypot(right.x-left.x,right.y-left.y)||1;
@@ -188,6 +188,8 @@ export function createRobe(){
    }
    ctx.restore();
   }
+  // Real forearms in front of the torso occlude the garment along their skin outline.
+  neckMask.eraseArms(ctx,smooth,hands,center,span);
   // Cut the garment away from hands so the live video remains untouched.
   for(const hand of hands){
    ctx.save();ctx.globalCompositeOperation='destination-out';ctx.fillStyle='#000';ctx.shadowColor='#000';ctx.shadowBlur=2;ctx.beginPath();
