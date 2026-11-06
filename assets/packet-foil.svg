@@ -12,8 +12,5 @@
 <path d="M9 61Q64 94 91 140Q100 155 110 169Q68 134 47 108Z" fill="url(#fold)"/>
 <path d="M228 112Q181 153 172 195L156 236Q160 168 195 133Z" fill="url(#fold)"/>
 <path d="M20 306Q63 272 95 265L132 255Q81 288 59 303Z" fill="url(#fold)"/>
-<path d="M15 46Q64 53 75 67M16 58Q42 60 51 71M228 76Q201 95 204 115M224 89Q207 105 209 124M219 282Q195 264 189 239M213 299Q190 278 186 264M26 290Q35 267 53 259" fill="none" stroke="#dde3d9" stroke-opacity=".26" stroke-width="1.2"/>
-<path d="M16 48Q57 55 72 68M227 78Q203 96 205 115M218 284Q193 264 188 241M25 292Q34 269 52 261" fill="none" stroke="#566461" stroke-opacity=".23" stroke-width="1.4"/>
 <path d="M5 8h230v13H5ZM5 309h230v15H5ZM5 8h9v316H5ZM226 8h9v316h-9Z" fill="url(#seal)"/>
-<path d="M14 23v283h211V23" fill="none" stroke="#d4dcd0" stroke-opacity=".24"/>
 </svg>
