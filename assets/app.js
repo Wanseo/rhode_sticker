@@ -56,7 +56,7 @@ function stickerExposed(button){
 function pick(button,p){
  if(drag)return;
  const kind=button.dataset.sticker||'berry';
- const ratio=kind==='berry'?1.2:.5;
+ const ratio=kind==='berry'?1.2:.6;
  const rect=button.querySelector('img').getBoundingClientRect();
  const size=Math.min(rect.width,rect.height/ratio);
  button.classList.add('used');drag={button,p,size,kind};
@@ -121,7 +121,7 @@ function gesture(now){
  pinching=next;
 }
 function drawSticker(p,size,angle=0,kind='berry'){
- const image=kind==='berry'?berry:patch,ratio=kind==='berry'?1.2:.5;
+ const image=kind==='berry'?berry:patch,ratio=kind==='berry'?1.2:.6;
  if(!image.complete||!image.naturalWidth)return;
  ctx.save();ctx.translate(p.x,p.y);ctx.rotate(angle);if(kind==='patch-flipped')ctx.scale(-1,1);
  ctx.drawImage(image,-size/2,-size*ratio/2,size,size*ratio);ctx.restore();
