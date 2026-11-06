@@ -249,7 +249,7 @@ function render(now){
  trackRobe(now);
  ctx.clearRect(0,0,canvas.width,canvas.height);
  robeContext.clearRect(0,0,robeCanvas.width,robeCanvas.height);
- robe.draw(robeContext,pose,hands);
+ robe.draw(robeContext,pose,hands,face);
  const b=basis();if(b)for(const s of stickers){if(drag?.existing===s)continue;const p=stickerPosition(s,b),draw=s.kind==='berry'?drawSticker:drawFittedPatch;draw(p,s.size*b.size,b.angle-Math.PI,s.kind);}
  if(drag)drawSticker(drag.p,drag.size,drag.angle||0,drag.kind);
  lip.draw(ctx,now);

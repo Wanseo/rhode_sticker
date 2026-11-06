@@ -8,7 +8,7 @@ export function createRobe(){
  const torso=new Image();torso.decoding='async';torso.src=new URL('./robe-body-v1.png',import.meta.url).href;
  let smooth=[];
  function reset(){smooth=[];}
- function draw(ctx,pose,hands){
+ function draw(ctx,pose,hands,face=[]){
   if(!pose.length||pose[11].visibility<.5||pose[12].visibility<.5){reset();return;}
   smooth=pose.map((p,i)=>smooth[i]?{...p,x:smooth[i].x*.35+p.x*.65,y:smooth[i].y*.35+p.y*.65}:p);
   let l=smooth[11],r=smooth[12];if(l.x>r.x)[l,r]=[r,l];
@@ -19,7 +19,8 @@ export function createRobe(){
   const hips=[smooth[23],smooth[24]].filter(p=>p.visibility>.45).map(point);
   const waist=hips.length?Math.max(.65,Math.min(1.65,hips.reduce((sum,p)=>sum+p.y,0)/hips.length*.77)):1.05;
   const bottom=Math.max(1.65,...hips.map(p=>p.y+.75));
-  ctx.save();ctx.translate(center.x,center.y);ctx.rotate(angle);ctx.scale(span,span);ctx.translate(0,-.19);
+  const robeLift=-.23;
+  ctx.save();ctx.translate(center.x,center.y);ctx.rotate(angle);ctx.scale(span,span);ctx.translate(0,robeLift);
   const texture=ctx.createPattern(tile,'repeat');texture.setTransform(new DOMMatrix().scale(.0011));
   function cloth(path,light=false){
    ctx.save();ctx.shadowColor='rgba(59,56,45,.25)';ctx.shadowBlur=4;ctx.shadowOffsetY=2;
@@ -52,6 +53,9 @@ export function createRobe(){
   function sleeve(shoulder,elbow,wrist){
    if(elbow.visibility<.45||wrist.visibility<.45)return;
    const a=point(shoulder),b=point(elbow),c=point(wrist);a.y+=.1;
+   // The shoulder joins the lifted torso; elbows and cuffs stay on the real arm.
+   b.y-=robeLift;c.y-=robeLift;
+
    const unit=(p,q)=>{const d=Math.hypot(q.x-p.x,q.y-p.y)||1;return{x:-(q.y-p.y)/d,y:(q.x-p.x)/d};};
    const u=unit(a,b),v=unit(b,c),end={x:c.x+(b.x-c.x)*.13,y:c.y+(b.y-c.y)*.13};
    const path=new Path2D();
@@ -65,11 +69,10 @@ export function createRobe(){
    ctx.strokeStyle='rgba(156,151,132,.15)';ctx.lineWidth=.012;ctx.lineCap='round';
    ctx.beginPath();ctx.moveTo(b.x+v.x*.12,b.y+v.y*.12);ctx.lineTo(end.x+v.x*.12,end.y+v.y*.12);ctx.stroke();
    const cuff=new Path2D();
-   cuff.moveTo(end.x+v.x*.16,end.y+v.y*.2);cuff.lineTo(end.x-v.x*.16,end.y-v.y*.2);
+   cuff.moveTo(end.x+v.x*.16,end.y+v.y*.16);cuff.lineTo(end.x-v.x*.16,end.y-v.y*.16);
    cuff.lineTo(end.x-v.x*.16+(b.x-c.x)*.09,end.y-v.y*.16+(b.y-c.y)*.09);
    cuff.lineTo(end.x+v.x*.16+(b.x-c.x)*.09,end.y+v.y*.16+(b.y-c.y)*.09);cuff.closePath();cloth(cuff,true);piping(cuff);drape(cuff,[[end.x+v.x*.16,end.y+v.y*.16,end.x-v.x*.16,end.y-v.y*.16,.035,.22]]);
   }
-  sleeve(smooth[11],smooth[13],smooth[15]);sleeve(smooth[12],smooth[14],smooth[16]);
   if(torso.complete&&torso.naturalWidth){
    // Split at the tied waist so the photographic folds stay fitted to the body.
    const cropX=torso.naturalWidth*.125,cropWidth=torso.naturalWidth*.75;
@@ -94,11 +97,18 @@ export function createRobe(){
   }
   const knot=new Path2D();knot.ellipse(0,waist+.065,.095,.065,-.25,0,Math.PI*2);cloth(knot,true);
   }
-  for(const [shoulder,elbow,wrist] of [[11,13,15],[12,14,16]]){
-   const w=point(smooth[wrist]);
-   if(w.y>.15&&Math.abs(w.x)<.55)sleeve(smooth[shoulder],smooth[elbow],smooth[wrist]);
-  }
+  // Draw each continuous sleeve once, over the photographed shoulder seam.
+  sleeve(smooth[11],smooth[13],smooth[15]);sleeve(smooth[12],smooth[14],smooth[16]);
   ctx.restore();
+  // Preserve the actual face above the raised collar, including the jaw outline.
+  if(face.length>454){
+   const oval=[10,338,297,332,284,251,389,356,454,323,361,288,397,365,379,378,400,377,152,148,176,149,150,136,172,58,132,93,234,127,162,21,54,103,67,109];
+   ctx.save();ctx.globalCompositeOperation='destination-out';ctx.fillStyle='#000';ctx.strokeStyle='#000';ctx.lineWidth=1.5;ctx.shadowColor='#000';ctx.shadowBlur=1.5;
+   ctx.beginPath();
+   const first=face[oval[0]],last=face[oval[oval.length-1]];ctx.moveTo((first.x+last.x)/2,(first.y+last.y)/2);
+   oval.forEach((index,i)=>{const p=face[index],next=face[oval[(i+1)%oval.length]];ctx.quadraticCurveTo(p.x,p.y,(p.x+next.x)/2,(p.y+next.y)/2);});
+   ctx.closePath();ctx.fill();ctx.stroke();ctx.restore();
+  }
   // Cut the garment away from hands so the live video remains untouched.
   for(const hand of hands){
    ctx.save();ctx.globalCompositeOperation='destination-out';ctx.fillStyle='#000';ctx.shadowColor='#000';ctx.shadowBlur=2;ctx.beginPath();
