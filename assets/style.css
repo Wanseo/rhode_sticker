@@ -12,7 +12,7 @@
 .lid-mirror::after{content:'';position:absolute;inset:7% 6%;border:1px solid #ffffff90;border-radius:inherit;background:linear-gradient(125deg,#ffffff50,transparent 45%,#ffffff15)}
 .hinge{position:absolute;z-index:4;left:29%;right:29%;top:0;height:5px;border-radius:4px;background:linear-gradient(#e7ecdf,#899b8c,#dbe3d5);box-shadow:0 1px 1px #677b6a66}
 #case.open .lid{transform:rotateX(151deg) scaleY(.86);z-index:1}
-.sticker-sheet{position:absolute;left:8%;top:38%;width:84%;aspect-ratio:.68;grid-template-rows:repeat(3,1fr);padding:10px 5px;display:grid;grid-template-columns:repeat(3,1fr);gap:5px;background:linear-gradient(130deg,#f8fbecbb,#e6efdc88);border:1px solid #ffffffb0;border-radius:8px;box-shadow:0 4px 10px #242f2020,inset 0 0 14px #ffffff44;z-index:2}
+.sticker-sheet{position:absolute;left:8%;top:38%;width:84%;aspect-ratio:.68;grid-template-rows:repeat(3,1fr);padding:10px 5px;display:grid;grid-template-columns:repeat(3,1fr);gap:5px;background:#ffffff40;border:1px solid #ffffff80;border-radius:8px;box-shadow:0 4px 10px #24242415,inset 0 0 14px #ffffff33;z-index:2}
 #rear-film{top:6%;z-index:1;pointer-events:none}
 #rear-film span{display:grid;place-items:center;min-width:0;min-height:0}
 #rear-film span:nth-child(n+4){visibility:hidden}
@@ -31,7 +31,7 @@
 #packet.open{clip-path:polygon(0 14%,5% 15%,11% 13.5%,17% 15.5%,23% 14%,30% 17%,37% 15%,43% 18%,50% 16%,57% 18.5%,64% 17%,71% 19%,78% 16%,85% 18%,93% 16%,100% 17%,100% 100%,0 100%)}
 #packet.open::before{content:'';position:absolute;left:6%;right:5%;top:14%;height:7%;background:linear-gradient(175deg,#e3e8db 0%,#66766d 38%,#3e4d45 55%,#b2bdae 80%,transparent);clip-path:polygon(0 0,45% 28%,100% 18%,100% 58%,55% 88%,0 57%);opacity:.9}
 .packet-brand{position:absolute;left:15%;top:40%;font-size:clamp(14px,2.4vw,24px);font-weight:600;letter-spacing:-1px;text-shadow:0 1px 1px #67766c40}.packet-label{position:absolute;bottom:19%;left:15%;font-size:clamp(6px,.8vw,9px);line-height:1.5;text-shadow:0 1px 1px #67766c40}.packet-label small{display:block;margin-top:8px;font-size:.85em;opacity:.8}
-#patch-tray{position:absolute;left:8%;top:-65%;width:84%;display:grid;gap:8px;padding:8px;border:1px solid #ffffff80;border-radius:12px;background:#eaf0e040;z-index:2;animation:patch-out .8s ease both}
+#patch-tray{position:absolute;left:8%;top:-65%;width:84%;display:grid;gap:8px;padding:8px;border:1px solid #ffffff80;border-radius:12px;background:#ffffff40;z-index:2;animation:patch-out .8s ease both}
 #patch-tray button{display:grid;place-items:center;width:100%;aspect-ratio:5/3;border:0;background:transparent;padding:0;touch-action:none}#patch-tray img{display:block;width:92%;height:92%;object-fit:contain;pointer-events:none;filter:drop-shadow(0 2px 1px #0002)}#patch-tray button.used{visibility:hidden}[data-sticker="patch-flipped"] img{transform:scaleX(-1)}
 @keyframes patch-out{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}@media(prefers-reduced-motion:reduce){.tear-strip{transition:none}#patch-tray{animation-duration:.01s}}
 
@@ -49,7 +49,7 @@
 #packet.open{clip-path:polygon(0 10%,7% 11%,15% 9.5%,23% 11%,32% 10%,42% 11.5%,53% 10%,65% 12%,77% 10%,89% 11%,100% 10%,100% 100%,0 100%)}
 #packet.open::before{top:10%;height:2%;z-index:1}.packet-print{position:absolute;left:12%;right:9%;top:54%;bottom:7%;display:flex;flex-direction:column;align-items:flex-start;pointer-events:none;text-shadow:none}.packet-berry{position:absolute;bottom:100%;left:0;width:25%;height:auto;margin-bottom:4%}.packet-print>.brand-logo{width:58%;margin-bottom:8%}.packet-title{font-size:clamp(4.25px,.8925vw,8.5px);font-weight:600;line-height:1.18;margin-bottom:9%;text-align:left}.packet-description{font-size:clamp(3.4px,.7225vw,6.8px);line-height:1.25;text-align:left}.packet-count{font-size:clamp(3.4px,.7225vw,6.8px);line-height:1.35;margin-top:auto;text-align:left}
 
-/* Closed shell: full-height body, U-shaped lid and recessed thumb grip. */
-#case:not(.open) .case-body{top:0;clip-path:none;border-radius:22% / 14%;padding:0}
-#case:not(.open) .case-body::before{content:'';position:absolute;left:32%;top:54%;width:36%;height:14%;border-radius:50%;background:radial-gradient(ellipse at 50% 0,#a4a5ae 0%,#c4c5cc 43%,#e8e9ed 72%,#d3d4d9 84%);box-shadow:inset 0 -1px 2px #fff7}
-#case:not(.open) .hinge{visibility:hidden}
+/* Keep the shell, logo and thumb grip fixed while only the lid rotates. */
+#case .case-body{top:0;clip-path:none;border-radius:22% / 14%;padding:0}
+#case .case-body::before{content:'';position:absolute;left:32%;top:54%;width:36%;height:14%;border-radius:50%;background:radial-gradient(ellipse at 50% 0,#a4a5ae 0%,#c4c5cc 43%,#e8e9ed 72%,#d3d4d9 84%);box-shadow:inset 0 -1px 2px #fff7}
+#case .hinge{visibility:hidden}
