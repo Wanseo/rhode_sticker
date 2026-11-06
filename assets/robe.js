@@ -1,3 +1,4 @@
+import {traceNeckline,necklineDepth} from './neckline-profile.js';
 import {createNeckMask} from './neck-mask.js';
 export function createRobe(){
  // A photographed looped-pile material is loaded once and reused in every frame.
@@ -175,16 +176,8 @@ export function createRobe(){
    const rx=(right.x-left.x)/faceWidth,ry=(right.y-left.y)/faceWidth;
    let dx=-ry,dy=rx;
    if(dx*(center.x-chin.x)+dy*(center.y-chin.y)<0){dx=-dx;dy=-dy;}
-   const neckLength=Math.max(faceHeight*.12,Math.min(faceHeight*.45,(center.x-chin.x)*dx+(center.y-chin.y)*dy-span*.06));
-   const top={x:chin.x-dx*faceHeight*.1,y:chin.y-dy*faceHeight*.1};
-   const length=neckLength+faceHeight*.1,halfWidth=faceWidth*.29;
-   const edge=(t,w)=>({x:top.x+dx*length*t+rx*halfWidth*w,y:top.y+dy*length*t+ry*halfWidth*w});
-   const a=edge(0,-1),b=edge(.35,-.98),c=edge(.65,-.8),d=edge(.82,-.5);
-   const e=edge(.82,.5),f=edge(.65,.8),g=edge(.35,.98),h=edge(0,1);
-   const tip=edge(1,0),lowerLeft=edge(.95,-.25),lowerRight=edge(.95,.25);
-   ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.bezierCurveTo(b.x,b.y,c.x,c.y,d.x,d.y);
-   ctx.quadraticCurveTo(lowerLeft.x,lowerLeft.y,tip.x,tip.y);ctx.quadraticCurveTo(lowerRight.x,lowerRight.y,e.x,e.y);
-   ctx.bezierCurveTo(f.x,f.y,g.x,g.y,h.x,h.y);ctx.closePath();ctx.fill();ctx.stroke();
+   const neckLength=necklineDepth({chin,center,span,width:faceWidth,height:faceHeight,dx,dy});
+   traceNeckline(ctx,{chin,rx,ry,dx,dy,width:faceWidth,height:faceHeight,length:neckLength});ctx.fill();ctx.stroke();
    }
    ctx.restore();
   }
