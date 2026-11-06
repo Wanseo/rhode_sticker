@@ -228,7 +228,7 @@ $('#start').addEventListener('click',async()=>{
   if(id!==session){acquired.getTracks().forEach(t=>t.stop());return;}
   stream=acquired;video.srcObject=stream;await video.play();
   $('#welcome').hidden=true;$('#camera').hidden=false;tracking.textContent='손·얼굴 인식 준비 중';message('처음에는 인식 모델을 불러오는 데 잠시 걸릴 수 있어요');raf=requestAnimationFrame(render);
-  try{await initModels();if(id!==session)return;message('오른쪽 케이스를 열거나 왼쪽 봉투 윗부분을 집어 뜯어보세요');}
+  try{await initModels();if(id!==session)return;message('Open the case on the right, or pinch and tear open the pouch on the left.');}
   catch(e){if(id===session){tracking.textContent='인식 모델을 불러오지 못했어요';message('카메라를 다시 켜서 인식을 재시도해주세요. 케이스 클릭과 스티커 드래그도 가능해요');}}
  }catch(e){if(id===session){closeCamera();$('#error').textContent=e.name==='NotAllowedError'?'카메라 권한을 허용한 뒤 다시 눌러주세요.':e.name==='NotFoundError'?'연결된 카메라가 없어요.':e.message;$('#error').hidden=false;}}
  finally{$('#start').disabled=false;}
