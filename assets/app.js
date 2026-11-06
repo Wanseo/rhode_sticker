@@ -166,6 +166,38 @@ function drawSticker(p,size,angle=0,kind='berry'){
  ctx.save();ctx.translate(p.x,p.y);ctx.rotate(angle);if(kind==='patch-flipped')ctx.scale(-1,1);
  ctx.drawImage(image,-size/2,-size*ratio/2,size,size*ratio);ctx.restore();
 }
+function drawFittedPatch(p,size,angle,kind){
+ if(!patch.complete||!patch.naturalWidth)return;
+ const base=basis();if(!base)return;
+ const axis={x:Math.cos(angle),y:Math.sin(angle)};
+ const nose=face[168],side=(p.x-nose.x)*axis.x+(p.y-nose.y)*axis.y<0?-1:1;
+ const eyes=[[face[33],face[133]],[face[263],face[362]]];
+ eyes.sort((a,b)=>dist({x:(a[0].x+a[1].x)/2,y:(a[0].y+a[1].y)/2},p)-dist({x:(b[0].x+b[1].x)/2,y:(b[0].y+b[1].y)/2},p));
+ const eye=eyes[0];
+ eye.sort((a,b)=>(a.x-b.x)*axis.x+(a.y-b.y)*axis.y);
+ const eyeAngle=Math.atan2(eye[1].y-eye[0].y,eye[1].x-eye[0].x);
+ const delta=Math.atan2(Math.sin(eyeAngle-angle),Math.cos(eyeAngle-angle));
+ const tilt=Math.max(-.22,Math.min(.22,delta))*.65;
+ const leftSpan=dist(face[234],nose),rightSpan=dist(face[454],nose);
+ const yaw=Math.max(-.4,Math.min(.4,(leftSpan-rightSpan)/Math.max(1,leftSpan+rightSpan)));
+ const compression=1-Math.max(0,-side*yaw)*.3;
+ const bend=size*(.06+Math.abs(yaw)*.05);
+ ctx.save();ctx.translate(p.x,p.y);ctx.rotate(angle+tilt);
+ // Narrow texture strips follow a curved cheek surface; the center stays at the drop point.
+ const count=28,sw=patch.naturalWidth/count,height=size*.6;
+ for(let i=0;i<count;i++){
+  const t=(i+.5)/count-.5;
+  const outward=t*side;
+  const lift=-bend*(outward+2*outward*outward);
+  const x=(i/count-.5)*size*compression;
+  const source=kind==='patch-flipped'?(count-1-i)*sw:i*sw;
+  ctx.save();ctx.translate(x,lift);
+  if(kind==='patch-flipped'){ctx.translate(size*compression/count,0);ctx.scale(-1,1);}
+  ctx.drawImage(patch,source,0,sw,patch.naturalHeight,0,-height/2,size*compression/count+.3,height);
+  ctx.restore();
+ }
+ ctx.restore();
+}
 function render(now){
  if(!stream)return;
  if(canvas.width!==stage.clientWidth||canvas.height!==stage.clientHeight){canvas.width=stage.clientWidth;canvas.height=stage.clientHeight;}
@@ -181,7 +213,7 @@ function render(now){
   }catch(e){tracking.textContent='인식이 잠시 멈췄어요. 카메라를 다시 켜주세요';handModel.close();faceModel.close();handModel=faceModel=null;cancelDrag();cursor.hidden=true;}
  }
  ctx.clearRect(0,0,canvas.width,canvas.height);
- const b=basis();if(b)for(const s of stickers){if(drag?.existing===s)continue;const c=Math.cos(b.angle),sn=Math.sin(b.angle),p=face[s.index];drawSticker({x:p.x+(s.u*c-s.v*sn)*b.size,y:p.y+(s.u*sn+s.v*c)*b.size},s.size*b.size,b.angle-Math.PI,s.kind);}
+ const b=basis();if(b)for(const s of stickers){if(drag?.existing===s)continue;const p=stickerPosition(s,b),draw=s.kind==='berry'?drawSticker:drawFittedPatch;draw(p,s.size*b.size,b.angle-Math.PI,s.kind);}
  if(drag)drawSticker(drag.p,drag.size,drag.angle||0,drag.kind);
  lip.draw(ctx,now);
  recording.draw();
