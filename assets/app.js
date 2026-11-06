@@ -137,7 +137,7 @@ function render(now){
   try{
    face=(faceModel.detectForVideo(video,now).faceLandmarks[0]||[]).map(map);
    hands=handModel.detectForVideo(video,now).landmarks.map(h=>h.map(map));
-   tracking.textContent=`${face.length?'얼굴 인식됨':'얼굴을 보여주세요'} · ${hands.length?'손 인식됨':'손을 보여주세요'}`;
+   tracking.textContent=`${face.length?'Face detected':'Show your face'} · ${hands.length?'Hand detected':'Show your hand'}`;
    gesture(now);
   }catch(e){tracking.textContent='인식이 잠시 멈췄어요. 카메라를 다시 켜주세요';handModel.close();faceModel.close();handModel=faceModel=null;cancelDrag();cursor.hidden=true;}
  }
