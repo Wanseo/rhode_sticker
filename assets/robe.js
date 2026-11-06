@@ -22,6 +22,8 @@ export function createRobe(){
  torso.decoding=collar.decoding='async';torso.onload=collar.onload=prepareCollar;
  torso.src=new URL('./robe-body-v1.png',import.meta.url).href;collar.src=new URL('./robe-collar-v2.png',import.meta.url).href;
  const neckMask=createNeckMask();
+ const sleeveLayer=document.createElement('canvas'),sleeveContext=sleeveLayer.getContext('2d');
+ const shoulderMask=document.createElement('canvas'),shoulderContext=shoulderMask.getContext('2d');
  let smooth=[];const armShapes=new Map();
  function reset(){smooth=[];armShapes.clear();neckMask.reset();}
  function draw(ctx,pose,hands,face=[],video,stage){
@@ -89,9 +91,22 @@ export function createRobe(){
    const end={x:c.x+(b.x-c.x)*.13,y:c.y+(b.y-c.y)*.13};
    const root={x:a.x-side*.16,y:a.y-.12},outer={x:a.x+u.x*shoulderRadius,y:a.y+u.y*shoulderRadius+.08};
    const inner={x:a.x-side*.17,y:a.y+.23};
+   // Feather the shoulder into the body on a small reusable sleeve layer.
+   const main=ctx,matrix=main.getTransform();
+   const minX=Math.min(a.x,b.x,c.x)-.45,maxX=Math.max(a.x,b.x,c.x)+.45;
+   const minY=Math.min(a.y,b.y,c.y)-.4,maxY=Math.max(a.y,b.y,c.y)+.4;
+   const corners=[[minX,minY],[maxX,minY],[minX,maxY],[maxX,maxY]].map(([x,y])=>({x:matrix.a*x+matrix.c*y+matrix.e,y:matrix.b*x+matrix.d*y+matrix.f}));
+   const left=Math.max(0,Math.floor(Math.min(...corners.map(p=>p.x)))-4),top=Math.max(0,Math.floor(Math.min(...corners.map(p=>p.y)))-4);
+   const right=Math.min(main.canvas.width,Math.ceil(Math.max(...corners.map(p=>p.x)))+4),bottom=Math.min(main.canvas.height,Math.ceil(Math.max(...corners.map(p=>p.y)))+4);
+   if(right<=left||bottom<=top)return;
+   if(sleeveLayer.width<right-left)sleeveLayer.width=Math.ceil((right-left)/64)*64;
+   if(sleeveLayer.height<bottom-top)sleeveLayer.height=Math.ceil((bottom-top)/64)*64;
+   sleeveContext.setTransform(1,0,0,1,0,0);sleeveContext.clearRect(0,0,sleeveLayer.width,sleeveLayer.height);
+   sleeveContext.globalCompositeOperation='source-over';sleeveContext.globalAlpha=1;sleeveContext.filter='none';sleeveContext.shadowColor='transparent';
+   sleeveContext.setTransform(matrix.a,matrix.b,matrix.c,matrix.d,matrix.e-left,matrix.f-top);ctx=sleeveContext;
    const path=new Path2D();path.moveTo(root.x,root.y);
    path.bezierCurveTo(a.x+side*.04,a.y-.09,outer.x,outer.y-.035,outer.x,outer.y);
-   path.quadraticCurveTo(b.x+u.x*elbowRadius,b.y+u.y*elbowRadius,end.x+v.x*.15,end.y+v.y*.15);
+   path.bezierCurveTo(outer.x+u.x*.02,outer.y+.18,b.x+u.x*elbowRadius,b.y+u.y*elbowRadius,end.x+v.x*.15,end.y+v.y*.15);
    path.lineTo(end.x-v.x*.15,end.y-v.y*.15);
    path.quadraticCurveTo(b.x-u.x*elbowRadius,b.y-u.y*elbowRadius,inner.x,inner.y);
    path.bezierCurveTo(root.x-side*.025,inner.y-.04,root.x-side*.015,root.y+.08,root.x,root.y);path.closePath();cloth(path,false,false);
@@ -102,6 +117,18 @@ export function createRobe(){
    cuff.moveTo(end.x+v.x*.16,end.y+v.y*.16);cuff.lineTo(end.x-v.x*.16,end.y-v.y*.16);
    cuff.lineTo(end.x-v.x*.16+(b.x-c.x)*.09,end.y-v.y*.16+(b.y-c.y)*.09);
    cuff.lineTo(end.x+v.x*.16+(b.x-c.x)*.09,end.y+v.y*.16+(b.y-c.y)*.09);cuff.closePath();cloth(cuff,true);piping(cuff);drape(cuff,[[end.x+v.x*.16,end.y+v.y*.16,end.x-v.x*.16,end.y-v.y*.16,.035,.22]]);
+   if(shoulderMask.width<sleeveLayer.width)shoulderMask.width=sleeveLayer.width;
+   if(shoulderMask.height<sleeveLayer.height)shoulderMask.height=sleeveLayer.height;
+   shoulderContext.setTransform(1,0,0,1,0,0);shoulderContext.globalCompositeOperation='source-over';
+   shoulderContext.clearRect(0,0,shoulderMask.width,shoulderMask.height);
+   shoulderContext.drawImage(main.canvas,left,top,right-left,bottom-top,0,0,right-left,bottom-top);
+   shoulderContext.setTransform(matrix.a,matrix.b,matrix.c,matrix.d,matrix.e-left,matrix.f-top);
+   shoulderContext.translate(a.x-side*.20,a.y-.02);shoulderContext.scale(.23,.38);
+   const blend=shoulderContext.createRadialGradient(0,0,.32,0,0,1);blend.addColorStop(0,'#000');blend.addColorStop(1,'transparent');
+   shoulderContext.globalCompositeOperation='destination-in';shoulderContext.fillStyle=blend;shoulderContext.fillRect(-8,-8,16,16);
+   // Fade only where opaque body fabric already exists, so no shoulder gaps appear.
+   ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.globalCompositeOperation='destination-out';ctx.shadowColor='transparent';ctx.drawImage(shoulderMask,0,0);ctx.restore();
+   ctx=main;main.save();main.setTransform(1,0,0,1,0,0);main.drawImage(sleeveLayer,left,top);main.restore();
   }
   const bodyImage=wrappedReady?wrappedTorso:torso;
   if(torso.complete&&torso.naturalWidth){
