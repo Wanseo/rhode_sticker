@@ -53,3 +53,7 @@
 #case .case-body{top:0;clip-path:none;border-radius:22% / 14%;padding:0}
 #case .case-body::before{content:'';position:absolute;left:32%;top:54%;width:36%;height:14%;border-radius:50%;background:radial-gradient(ellipse at 50% 0,#a4a5ae 0%,#c4c5cc 43%,#e8e9ed 72%,#d3d4d9 84%);box-shadow:inset 0 -1px 2px #fff7}
 #case .hinge{visibility:hidden}
+
+/* Reveal the original sheet pocket without resizing the shell or moving its logo. */
+#case.open .case-body{clip-path:polygon(0 38%,10% 38%,14% 43.58%,21% 49.16%,31% 53.5%,42% 55.98%,50% 56.6%,58% 55.98%,69% 53.5%,79% 49.16%,86% 43.58%,90% 38%,100% 38%,100% 100%,0 100%)}
+#case.open .case-body::before{visibility:hidden}
