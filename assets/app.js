@@ -74,7 +74,7 @@ function drop(){
   if(inside&&nearest<base.size*.45){
    const dx=drag.p.x-face[index].x,dy=drag.p.y-face[index].y,c=Math.cos(base.angle),s=Math.sin(base.angle);
    stickers.push({index,u:(dx*c+dy*s)/base.size,v:(-dx*s+dy*c)/base.size,size:drag.size/base.size,kind:drag.kind});
-   drag=null;message('붙었어요! 다른 스티커도 집어서 붙여보세요');return;
+   drag=null;message('Sticker applied! Pick up another sticker and try it on.');return;
   }
  }
  cancelDrag();message(face.length?'얼굴 위에서 손가락을 펴면 스티커가 붙어요':'얼굴이 카메라에 보이도록 해주세요');
