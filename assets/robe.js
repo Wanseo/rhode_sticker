@@ -6,8 +6,8 @@ export function createRobe(){
  fabric.onload=()=>{t.drawImage(fabric,0,0,512,512);};
  fabric.src=new URL('./robe-terry-v1.png',import.meta.url).href;
  const torso=new Image();torso.decoding='async';torso.src=new URL('./robe-body-v1.png',import.meta.url).href;
- let smooth=[];
- function reset(){smooth=[];}
+ let smooth=[];const armShapes=new Map();
+ function reset(){smooth=[];armShapes.clear();}
  function draw(ctx,pose,hands,face=[]){
   if(!pose.length||pose[11].visibility<.5||pose[12].visibility<.5){reset();return;}
   smooth=pose.map((p,i)=>smooth[i]?{...p,x:smooth[i].x*.35+p.x*.65,y:smooth[i].y*.35+p.y*.65}:p);
@@ -51,20 +51,31 @@ export function createRobe(){
   }
   // Oversized sleeves follow the shoulder, elbow and wrist, leaving the hand free.
   function sleeve(shoulder,elbow,wrist){
-   if(elbow.visibility<.45||wrist.visibility<.45)return;
-   const a=point(shoulder),b=point(elbow),c=point(wrist);a.y+=.1;
+   const a=point(shoulder),side=a.x<0?-1:1,previous=armShapes.get(side);
+   const visible=p=>p&&p.visibility>=.45&&Number.isFinite(p.x)&&Number.isFinite(p.y);
+   const elbowTracked=visible(elbow),wristTracked=visible(wrist);
+   let b,c;
+   if(elbowTracked)b=point(elbow);
+   else if(wristTracked){const w=point(wrist);b={x:a.x+(w.x-a.x)*.55,y:a.y+(w.y-a.y)*.55};}
+   else b={x:a.x+(previous?.upper.x??side*.16),y:a.y+(previous?.upper.y??.68)};
+   if(wristTracked)c=point(wrist);
+   else c={x:b.x+(previous?.lower.x??(b.x-a.x)*.85),y:b.y+(previous?.lower.y??(b.y-a.y)*.85)};
+   if(elbowTracked&&wristTracked)armShapes.set(side,{upper:{x:b.x-a.x,y:b.y-a.y},lower:{x:c.x-b.x,y:c.y-b.y}});
+   const shoulderRadius=(elbowTracked||previous)? .16:.23;
+   const elbowRadius=(elbowTracked||previous)? .20:.25;
+   a.y+=.1;
    // The shoulder joins the lifted torso; elbows and cuffs stay on the real arm.
    b.y-=robeLift;c.y-=robeLift;
 
    const unit=(p,q)=>{const d=Math.hypot(q.x-p.x,q.y-p.y)||1;return{x:-(q.y-p.y)/d,y:(q.x-p.x)/d};};
    const u=unit(a,b),v=unit(b,c),end={x:c.x+(b.x-c.x)*.13,y:c.y+(b.y-c.y)*.13};
    const path=new Path2D();
-   path.moveTo(a.x+u.x*.16,a.y+u.y*.16);
-   path.quadraticCurveTo(b.x+u.x*.20,b.y+u.y*.20,end.x+v.x*.15,end.y+v.y*.15);
+   path.moveTo(a.x+u.x*shoulderRadius,a.y+u.y*shoulderRadius);
+   path.quadraticCurveTo(b.x+u.x*elbowRadius,b.y+u.y*elbowRadius,end.x+v.x*.15,end.y+v.y*.15);
    path.lineTo(end.x-v.x*.15,end.y-v.y*.15);
-   path.quadraticCurveTo(b.x-u.x*.20,b.y-u.y*.20,a.x-u.x*.16,a.y-u.y*.16);
+   path.quadraticCurveTo(b.x-u.x*elbowRadius,b.y-u.y*elbowRadius,a.x-u.x*shoulderRadius,a.y-u.y*shoulderRadius);
    const armLength=Math.hypot(b.x-a.x,b.y-a.y)||1,dx=(b.x-a.x)/armLength,dy=(b.y-a.y)/armLength;
-   path.bezierCurveTo(a.x-u.x*.16-dx*.18,a.y-u.y*.16-dy*.18,a.x+u.x*.16-dx*.18,a.y+u.y*.16-dy*.18,a.x+u.x*.16,a.y+u.y*.16);path.closePath();cloth(path);
+   path.bezierCurveTo(a.x-u.x*shoulderRadius-dx*.18,a.y-u.y*shoulderRadius-dy*.18,a.x+u.x*shoulderRadius-dx*.18,a.y+u.y*shoulderRadius-dy*.18,a.x+u.x*shoulderRadius,a.y+u.y*shoulderRadius);path.closePath();cloth(path);
    drape(path,[[a.x,a.y,b.x,b.y,.10,.22],[b.x,b.y,end.x,end.y,.07,.27]]);
    ctx.strokeStyle='rgba(156,151,132,.15)';ctx.lineWidth=.012;ctx.lineCap='round';
    ctx.beginPath();ctx.moveTo(b.x+v.x*.12,b.y+v.y*.12);ctx.lineTo(end.x+v.x*.12,end.y+v.y*.12);ctx.stroke();
