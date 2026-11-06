@@ -34,3 +34,5 @@
 #patch-tray{position:absolute;left:8%;top:-65%;width:84%;display:grid;gap:8px;padding:8px;border:1px solid #ffffff80;border-radius:12px;background:#eaf0e040;z-index:2;animation:patch-out .8s ease both}
 #patch-tray button{display:grid;place-items:center;width:100%;aspect-ratio:5/3;border:0;background:transparent;padding:0;touch-action:none}#patch-tray img{display:block;width:90%;height:90%;object-fit:contain;pointer-events:none;filter:drop-shadow(0 2px 1px #0002)}#patch-tray button.used{visibility:hidden}[data-sticker="patch-flipped"] img{transform:scaleX(-1)}
 @keyframes patch-out{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}@media(prefers-reduced-motion:reduce){.tear-strip{transition:none}#patch-tray{animation-duration:.01s}}
+
+.brand-logo{display:block;width:100%;height:auto;object-fit:contain;pointer-events:none}#start .brand-logo{width:clamp(180px,32vw,360px)}.wordmark .brand-logo{width:94px}.packet-brand{width:43%}.case-body>span{width:70%}.lid-front .brand-logo{width:70%}
