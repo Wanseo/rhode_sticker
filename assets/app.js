@@ -10,7 +10,16 @@ const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
 function message(s){hint.textContent=s;}
 function openCase(){
   if(open)return; open=true; caseButton.classList.add('open');caseButton.setAttribute('aria-expanded','true');
-  film.hidden=false;filmReadyAt=performance.now()+1100;
+  film.hidden=false;
+  const caseRect=caseButton.getBoundingClientRect();
+  // Layout offsets are unaffected by the sheet's animated transform.
+  const x=caseButton.offsetLeft+(caseRect.width-film.offsetWidth)/2-film.offsetLeft;
+  const y=caseButton.offsetTop+caseRect.height*.16-film.offsetTop;
+  const lift=Math.max(65,caseButton.offsetTop-film.offsetHeight-14)-film.offsetTop;
+  film.style.setProperty('--sheet-x',x+'px');
+  film.style.setProperty('--sheet-y',y+'px');
+  film.style.setProperty('--sheet-lift',lift+'px');
+  filmReadyAt=performance.now()+2450;
   message('딸기를 엄지·검지로 집어 얼굴로 가져간 뒤 손가락을 펴주세요');
 }
 function reset(){stickers=[];drag=null;pinching=false;film.querySelectorAll('button').forEach(b=>b.classList.remove('used'));}
@@ -113,7 +122,7 @@ $('#start').addEventListener('click',async()=>{
   if(id!==session){acquired.getTracks().forEach(t=>t.stop());return;}
   stream=acquired;video.srcObject=stream;await video.play();
   $('#welcome').hidden=true;$('#camera').hidden=false;tracking.textContent='손·얼굴 인식 준비 중';message('처음에는 인식 모델을 불러오는 데 잠시 걸릴 수 있어요');raf=requestAnimationFrame(render);
-  try{await initModels();if(id!==session)return;message('오른쪽 케이스 위에서 손을 슥 쓸어 열어보세요');}
+  try{await initModels();if(id!==session)return;message('오른쪽 케이스를 눌러 열어보세요');}
   catch(e){if(id===session){tracking.textContent='인식 모델을 불러오지 못했어요';message('카메라를 다시 켜서 인식을 재시도해주세요. 케이스 클릭과 스티커 드래그도 가능해요');}}
  }catch(e){if(id===session){closeCamera();$('#error').textContent=e.name==='NotAllowedError'?'카메라 권한을 허용한 뒤 다시 눌러주세요.':e.name==='NotFoundError'?'연결된 카메라가 없어요.':e.message;$('#error').hidden=false;}}
  finally{$('#start').disabled=false;}
