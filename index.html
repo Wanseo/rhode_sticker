@@ -10,6 +10,13 @@
 <section id="camera" hidden aria-label="스티커 카메라">
 <div id="stage">
 <video id="video" autoplay muted playsinline></video><canvas id="overlay" aria-label="얼굴 스티커"></canvas>
+<div id="packet-rig">
+<div id="patch-tray" hidden aria-label="아이패치 두 개">
+<button type="button" data-sticker="patch" aria-label="왼쪽 아이패치 집기"><img src="assets/eye-patch.svg" alt="아이패치"></button>
+<button type="button" data-sticker="patch-flipped" aria-label="오른쪽 아이패치 집기"><img src="assets/eye-patch.svg" alt="아이패치"></button>
+</div>
+<button id="packet" type="button" aria-label="아이패치 봉투 뜯기" aria-expanded="false"><span class="tear-strip">뜯어서 열기 ↗</span><span class="packet-brand">rhode</span><span class="packet-patches">◡ ◡</span><span class="packet-label">PEPTIDE EYE PREP<br><small>1 pair / 2 patches</small></span></button>
+</div>
 <div id="case-rig">
 <div id="rear-film" class="sticker-sheet" aria-hidden="true"></div>
 <div id="film" class="sticker-sheet" hidden aria-label="딸기 스티커 필름"></div>
