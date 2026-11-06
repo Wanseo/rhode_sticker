@@ -1,12 +1,18 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 330" preserveAspectRatio="none">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 345" preserveAspectRatio="none">
 <defs>
-<linearGradient id="foil" x1="0" y1="0" x2="1" y2=".7"><stop stop-color="#e3e6e5"/><stop offset=".18" stop-color="#858e90"/><stop offset=".48" stop-color="#d0d5d5"/><stop offset=".73" stop-color="#717c7f"/><stop offset="1" stop-color="#f0f1ed"/></linearGradient>
-<radialGradient id="dent"><stop stop-color="#5c6867" stop-opacity=".47"/><stop offset=".6" stop-color="#687471" stop-opacity=".12"/><stop offset="1" stop-color="#687471" stop-opacity="0"/></radialGradient>
-<pattern id="seal" width="2.5" height="3" patternUnits="userSpaceOnUse"><path d="M0 0v3" stroke="#e0e4db" stroke-opacity=".3" stroke-width=".7"/></pattern>
+<linearGradient id="foil" x1="0" y1="0" x2="1" y2=".55"><stop stop-color="#e8e7e2"/><stop offset=".18" stop-color="#aaaead"/><stop offset=".38" stop-color="#e1e1dc"/><stop offset=".63" stop-color="#bfc1bc"/><stop offset=".85" stop-color="#969b99"/><stop offset="1" stop-color="#e3e4df"/></linearGradient>
+<radialGradient id="light"><stop stop-color="#ffffff" stop-opacity=".85"/><stop offset=".45" stop-color="#fafaf6" stop-opacity=".36"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+<radialGradient id="shade"><stop stop-color="#4d5556" stop-opacity=".46"/><stop offset=".55" stop-color="#687172" stop-opacity=".20"/><stop offset="1" stop-color="#737879" stop-opacity="0"/></radialGradient>
+<pattern id="seal" width="2.5" height="2.5" patternUnits="userSpaceOnUse"><rect width="2.5" height="2.5" fill="#adb1ad"/><path d="M0 1.8 1.8 0M1.3 2.5 2.5 1.3" stroke="#f0f0e9" stroke-width=".65"/><path d="M0 2.5 2.5 0" stroke="#707775" stroke-width=".4"/></pattern>
 </defs>
-<rect width="240" height="330" fill="url(#foil)"/>
-<ellipse cx="47" cy="96" rx="39" ry="25" fill="url(#dent)" transform="rotate(-28 47 96)"/>
-<ellipse cx="183" cy="228" rx="48" ry="31" fill="url(#dent)" transform="rotate(30 183 228)"/>
-<ellipse cx="135" cy="70" rx="40" ry="18" fill="url(#dent)"/>
-<path d="M5 8h230v13H5ZM5 309h230v15H5ZM5 8h9v316H5ZM226 8h9v316h-9Z" fill="url(#seal)"/>
+<rect width="240" height="345" rx="17" fill="url(#foil)"/>
+<ellipse cx="80" cy="132" rx="60" ry="26" transform="rotate(-35 80 132)" fill="url(#shade)"/>
+<ellipse cx="136" cy="113" rx="65" ry="27" transform="rotate(-41 136 113)" fill="url(#light)"/>
+<ellipse cx="188" cy="158" rx="49" ry="34" transform="rotate(-30 188 158)" fill="url(#shade)"/>
+<ellipse cx="134" cy="191" rx="76" ry="36" transform="rotate(-35 134 191)" fill="url(#light)"/>
+<ellipse cx="166" cy="269" rx="65" ry="31" transform="rotate(-35 166 269)" fill="url(#shade)"/>
+<ellipse cx="94" cy="306" rx="73" ry="26" transform="rotate(-24 94 306)" fill="url(#light)"/>
+<g fill="url(#light)"><ellipse cx="22" cy="70" rx="31" ry="7"/><ellipse cx="23" cy="112" rx="31" ry="9"/><ellipse cx="25" cy="162" rx="35" ry="7"/><ellipse cx="24" cy="214" rx="30" ry="8"/><ellipse cx="219" cy="83" rx="29" ry="7"/><ellipse cx="215" cy="134" rx="29" ry="9"/><ellipse cx="219" cy="202" rx="30" ry="8"/><ellipse cx="215" cy="286" rx="28" ry="10"/></g>
+<path d="M17 0H223Q240 0 240 17V328Q240 345 223 345H17Q0 345 0 328V17Q0 0 17 0ZM17 29V326H223V29Z" fill="url(#seal)" fill-rule="evenodd"/>
+<rect x="1" y="1" width="238" height="343" rx="17" fill="none" stroke="#e7e8e1" stroke-width="1.2"/>
 </svg>
