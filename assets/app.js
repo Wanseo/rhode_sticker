@@ -13,7 +13,7 @@ patch.onload=()=>{patchTexture.getContext('2d').drawImage(patch,0,0,720,432);pat
 patch.src='assets/eye-patch.svg';
 const packet=$('#packet'),patchTray=$('#patch-tray');
 let packetOpen=false,tearStart=null,patchReadyAt=0;
-let poseModel,poseLoading,pose=[],lastPoseVideo=-1,lastPoseDetect=0,lastPoseSeen=0;
+let poseWorker,poseReady=false,poseBusy=false,pose=[],lastPoseVideo=-1,lastPoseDetect=0;
 const robe=createRobe();
 let stream, handModel, faceModel, loading, session=0, raf, lastVideo=-1, lastDetect=0;
 let face=[], hands=[], stickers=[], drag=null, pinching=false, trail=[], open=false, pointerId=null, lastHandSeen=0, filmReadyAt=0, lastFaceSeen=0;
@@ -121,21 +121,42 @@ function drop(){
  }
  cancelDrag();message(face.length?'얼굴 위에서 손가락을 펴면 스티커가 붙어요':'얼굴이 카메라에 보이도록 해주세요');
 }
+function initRobeTracking(){
+ if(poseWorker||!globalThis.Worker||!globalThis.createImageBitmap)return;
+ const worker=new Worker(new URL('./robe-tracker.js',import.meta.url));
+ poseWorker=worker;
+ worker.onmessage=({data})=>{
+  if(worker!==poseWorker)return;
+  if(data.type==='ready'){poseReady=true;return;}
+  poseBusy=false;
+  if(data.type==='result'&&data.session===session&&stream)pose=data.landmarks.map(map);
+  if(data.type==='error'){pose=[];poseReady=false;worker.terminate();poseWorker=null;console.warn('Robe tracking unavailable:',data.message);}
+ };
+ worker.onerror=()=>{if(worker!==poseWorker)return;pose=[];poseReady=false;poseBusy=false;worker.terminate();poseWorker=null;};
+}
+async function trackRobe(now){
+ if(!poseReady||poseBusy||!poseWorker||video.readyState<2||lastPoseVideo===video.currentTime||now-lastPoseDetect<100)return;
+ const worker=poseWorker,id=session;
+ poseBusy=true;lastPoseVideo=video.currentTime;lastPoseDetect=now;
+ try{
+  const frame=await createImageBitmap(video,{resizeWidth:480,resizeHeight:Math.max(1,Math.round(video.videoHeight*480/video.videoWidth))});
+  if(worker!==poseWorker||id!==session||!stream){frame.close();return;}
+  worker.postMessage({type:'frame',frame,timestamp:now,session:id},[frame]);
+ }catch(e){if(worker===poseWorker)poseBusy=false;}
+}
 async function initModels(){
+ initRobeTracking();
  if(handModel&&faceModel)return;
  if(loading)return loading;
  loading=(async()=>{
-  const {FilesetResolver,HandLandmarker,FaceLandmarker,PoseLandmarker}=await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22-rc.20250304/vision_bundle.mjs');
+  const {FilesetResolver,HandLandmarker,FaceLandmarker}=await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22-rc.20250304/vision_bundle.mjs');
   const vision=await FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22-rc.20250304/wasm');
   const created=[];
   try{
    const hand=await HandLandmarker.createFromOptions(vision,{baseOptions:{modelAssetPath:'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task'},runningMode:'VIDEO',numHands:1});created.push(hand);
    const faceTask=await FaceLandmarker.createFromOptions(vision,{baseOptions:{modelAssetPath:'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task'},runningMode:'VIDEO',numFaces:1});
    handModel=hand;faceModel=faceTask;
-   if(!poseModel&&!poseLoading){
-    poseLoading=PoseLandmarker.createFromOptions(vision,{baseOptions:{modelAssetPath:'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/1/pose_landmarker_full.task'},runningMode:'VIDEO',numPoses:1});
-    poseLoading.then(model=>{poseModel=model;}).catch(()=>{console.warn('Robe pose tracking could not load.');}).finally(()=>{poseLoading=null;});
-   }
+
   }catch(e){created.forEach(m=>m.close());throw e;}
  })();
  try{await loading;}finally{loading=null;}
@@ -223,22 +244,16 @@ function render(now){
    gesture(now);
   }catch(e){tracking.textContent='인식이 잠시 멈췄어요. 카메라를 다시 켜주세요';handModel.close();faceModel.close();handModel=faceModel=null;cancelDrag();cursor.hidden=true;}
  }
- if(poseModel&&video.readyState>=2&&lastPoseVideo!==video.currentTime&&now-lastPoseDetect>100){
-  lastPoseVideo=video.currentTime;lastPoseDetect=now;
-  try{
-   const detected=poseModel.detectForVideo(video,now).landmarks[0];
-   if(detected){pose=detected.map(map);lastPoseSeen=now;}else if(now-lastPoseSeen>300)pose=[];
-  }catch(e){pose=[];console.warn('Robe tracking frame failed.');}
- }
+ trackRobe(now);
  ctx.clearRect(0,0,canvas.width,canvas.height);
- robe.draw(ctx,pose,hands,video,stage);
+ robe.draw(ctx,pose,hands);
  const b=basis();if(b)for(const s of stickers){if(drag?.existing===s)continue;const p=stickerPosition(s,b),draw=s.kind==='berry'?drawSticker:drawFittedPatch;draw(p,s.size*b.size,b.angle-Math.PI,s.kind);}
  if(drag)drawSticker(drag.p,drag.size,drag.angle||0,drag.kind);
  lip.draw(ctx,now);
  recording.draw();
  raf=requestAnimationFrame(render);
 }
-function closeCamera(){robe.reset();pose=[];lastPoseVideo=-1;lip.close();recording.stop();session++;cancelAnimationFrame(raf);stream?.getTracks().forEach(t=>t.stop());stream=null;video.srcObject=null;$('#camera').hidden=true;$('#welcome').hidden=false;cursor.hidden=true;reset();face=[];hands=[];trail=[];open=false;caseButton.classList.remove('open');caseButton.setAttribute('aria-expanded','false');film.hidden=true;packetOpen=false;tearStart=null;packet.classList.remove('open');packet.setAttribute('aria-expanded','false');patchTray.hidden=true;pointerId=null;lastVideo=-1;}
+function closeCamera(){poseWorker?.terminate();poseWorker=null;poseReady=false;poseBusy=false;robe.reset();pose=[];lastPoseVideo=-1;lip.close();recording.stop();session++;cancelAnimationFrame(raf);stream?.getTracks().forEach(t=>t.stop());stream=null;video.srcObject=null;$('#camera').hidden=true;$('#welcome').hidden=false;cursor.hidden=true;reset();face=[];hands=[];trail=[];open=false;caseButton.classList.remove('open');caseButton.setAttribute('aria-expanded','false');film.hidden=true;packetOpen=false;tearStart=null;packet.classList.remove('open');packet.setAttribute('aria-expanded','false');patchTray.hidden=true;pointerId=null;lastVideo=-1;}
 $('#start').addEventListener('click',async()=>{
  if($('#start').disabled)return;$('#start').disabled=true;$('#error').hidden=true;const id=++session;
  try{

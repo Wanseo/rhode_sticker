@@ -10,7 +10,7 @@ export function createRobe(){
  }
  let smooth=[];
  function reset(){smooth=[];}
- function draw(ctx,pose,hands,video,stage){
+ function draw(ctx,pose,hands){
   if(!pose.length||pose[11].visibility<.5||pose[12].visibility<.5){reset();return;}
   smooth=pose.map((p,i)=>smooth[i]?{...p,x:smooth[i].x*.35+p.x*.65,y:smooth[i].y*.35+p.y*.65}:p);
   let l=smooth[11],r=smooth[12];if(l.x>r.x)[l,r]=[r,l];
@@ -73,9 +73,9 @@ export function createRobe(){
    if(w.y>.15&&Math.abs(w.x)<.55)sleeve(smooth[shoulder],smooth[elbow],smooth[wrist]);
   }
   ctx.restore();
-  // Restore live hands over the cloth when they pass in front of the chest.
+  // Cut the garment away from hands so the live video remains untouched.
   for(const hand of hands){
-   ctx.save();ctx.beginPath();
+   ctx.save();ctx.globalCompositeOperation='destination-out';ctx.fillStyle='#000';ctx.shadowColor='#000';ctx.shadowBlur=2;ctx.beginPath();
    const palm=[0,1,2,5,9,13,17];
    palm.forEach((i,n)=>{const p=hand[i];n?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y);});ctx.closePath();
    const palmSize=Math.hypot(hand[0].x-hand[9].x,hand[0].y-hand[9].y);
@@ -87,9 +87,7 @@ export function createRobe(){
      ctx.moveTo(b.x+r,b.y);ctx.arc(b.x,b.y,r,0,Math.PI*2);
     }
    }
-   ctx.clip();
-   const w=stage.clientWidth,h=stage.clientHeight,fit=getComputedStyle(video).objectFit==='cover'?Math.max:Math.min,scale=fit(w/video.videoWidth,h/video.videoHeight),vw=video.videoWidth*scale,vh=video.videoHeight*scale;
-   ctx.translate(w,0);ctx.scale(-1,1);ctx.drawImage(video,(w-vw)/2,(h-vh)/2,vw,vh);ctx.restore();
+   ctx.fill();ctx.restore();
   }
  }
  return{draw,reset};
