@@ -5,7 +5,11 @@ const video=$('#video'), stage=$('#stage'), canvas=$('#overlay'), ctx=canvas.get
 const film=$('#film'), caseButton=$('#case'), hint=$('#hint'), tracking=$('#tracking'), cursor=$('#cursor');
 const recording=createRecorder({video,stage,overlay:canvas,button:$('#record'),download:$('#download'),message});
 const berry=new Image(); berry.src='assets/strawberry.svg';
-const patch=new Image();patch.src='assets/eye-patch.svg';
+const patch=new Image();
+const patchTexture=document.createElement('canvas');patchTexture.width=720;patchTexture.height=432;
+let patchTextureReady=false;
+patch.onload=()=>{patchTexture.getContext('2d').drawImage(patch,0,0,720,432);patchTextureReady=true;};
+patch.src='assets/eye-patch.svg';
 const packet=$('#packet'),patchTray=$('#patch-tray');
 let packetOpen=false,tearStart=null,patchReadyAt=0;
 let stream, handModel, faceModel, loading, session=0, raf, lastVideo=-1, lastDetect=0;
@@ -167,7 +171,7 @@ function drawSticker(p,size,angle=0,kind='berry'){
  ctx.drawImage(image,-size/2,-size*ratio/2,size,size*ratio);ctx.restore();
 }
 function drawFittedPatch(p,size,angle,kind){
- if(!patch.complete||!patch.naturalWidth)return;
+ if(!patchTextureReady){drawSticker(p,size,angle,kind);return;}
  const base=basis();if(!base)return;
  const axis={x:Math.cos(angle),y:Math.sin(angle)};
  const nose=face[168],side=(p.x-nose.x)*axis.x+(p.y-nose.y)*axis.y<0?-1:1;
@@ -184,7 +188,7 @@ function drawFittedPatch(p,size,angle,kind){
  const bend=size*(.06+Math.abs(yaw)*.05);
  ctx.save();ctx.translate(p.x,p.y);ctx.rotate(angle+tilt);
  // Narrow texture strips follow a curved cheek surface; the center stays at the drop point.
- const count=28,sw=patch.naturalWidth/count,height=size*.6;
+ const count=28,sw=patchTexture.width/count,height=size*.6;
  for(let i=0;i<count;i++){
   const t=(i+.5)/count-.5;
   const outward=t*side;
@@ -193,7 +197,7 @@ function drawFittedPatch(p,size,angle,kind){
   const source=kind==='patch-flipped'?(count-1-i)*sw:i*sw;
   ctx.save();ctx.translate(x,lift);
   if(kind==='patch-flipped'){ctx.translate(size*compression/count,0);ctx.scale(-1,1);}
-  ctx.drawImage(patch,source,0,sw,patch.naturalHeight,0,-height/2,size*compression/count+.3,height);
+  ctx.drawImage(patchTexture,source,0,sw,patchTexture.height,0,-height/2,size*compression/count+.3,height);
   ctx.restore();
  }
  ctx.restore();
@@ -206,7 +210,7 @@ function render(now){
   try{
    const detectedFace=(faceModel.detectForVideo(video,now).faceLandmarks[0]||[]).map(map);
    if(detectedFace.length){face=detectedFace;lastFaceSeen=now;}
-   else if(!drag||now-lastFaceSeen>350)face=[];
+   else if(now-lastFaceSeen>650)face=[];
    hands=handModel.detectForVideo(video,now).landmarks.map(h=>h.map(map));
    tracking.textContent=`${face.length?'Face detected':'Show your face'} · ${hands.length?'Hand detected':'Show your hand'}`;
    gesture(now);
