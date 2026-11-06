@@ -1,4 +1,3 @@
-import { createRobe } from './robe.js';
 import { createLip } from './lip.js';
 import { createRecorder } from './recorder.js';
 const $ = s => document.querySelector(s);
@@ -13,8 +12,6 @@ patch.onload=()=>{patchTexture.getContext('2d').drawImage(patch,0,0,720,432);pat
 patch.src='assets/eye-patch.svg';
 const packet=$('#packet'),patchTray=$('#patch-tray');
 let packetOpen=false,tearStart=null,patchReadyAt=0;
-let poseModel,poseLoading,pose=[],lastPoseDetect=0,lastPoseSeen=0;
-const robe=createRobe();
 let stream, handModel, faceModel, loading, session=0, raf, lastVideo=-1, lastDetect=0;
 let face=[], hands=[], stickers=[], drag=null, pinching=false, trail=[], open=false, pointerId=null, lastHandSeen=0, filmReadyAt=0, lastFaceSeen=0;
 const lip=createLip({stage,face:()=>face,message});
@@ -55,7 +52,7 @@ function map(p){
  const w=stage.clientWidth,h=stage.clientHeight;
  const scale=getComputedStyle(video).objectFit==='cover'?Math.max(w/video.videoWidth,h/video.videoHeight):Math.min(w/video.videoWidth,h/video.videoHeight);
  const vw=video.videoWidth*scale,vh=video.videoHeight*scale;
- return{x:(1-p.x)*vw+(w-vw)/2,y:p.y*vh+(h-vh)/2,visibility:p.visibility??1};
+ return{x:(1-p.x)*vw+(w-vw)/2,y:p.y*vh+(h-vh)/2};
 }
 function basis(){if(!face.length)return null;const a=face[33],b=face[263];const size=dist(a,b);if(size<10)return null;return{size,angle:Math.atan2(b.y-a.y,b.x-a.x)};}
 function stickerExposed(button){
@@ -125,17 +122,13 @@ async function initModels(){
  if(handModel&&faceModel)return;
  if(loading)return loading;
  loading=(async()=>{
-  const {FilesetResolver,HandLandmarker,FaceLandmarker,PoseLandmarker}=await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22-rc.20250304/vision_bundle.mjs');
+  const {FilesetResolver,HandLandmarker,FaceLandmarker}=await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22-rc.20250304/vision_bundle.mjs');
   const vision=await FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22-rc.20250304/wasm');
   const created=[];
   try{
    const hand=await HandLandmarker.createFromOptions(vision,{baseOptions:{modelAssetPath:'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task'},runningMode:'VIDEO',numHands:1});created.push(hand);
    const faceTask=await FaceLandmarker.createFromOptions(vision,{baseOptions:{modelAssetPath:'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task'},runningMode:'VIDEO',numFaces:1});
    handModel=hand;faceModel=faceTask;
-   if(!poseModel&&!poseLoading){
-    poseLoading=PoseLandmarker.createFromOptions(vision,{baseOptions:{modelAssetPath:'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task'},runningMode:'VIDEO',numPoses:1});
-    poseLoading.then(model=>{poseModel=model;}).catch(()=>{message('Robe tracking could not load. Refresh the page to retry.');}).finally(()=>{poseLoading=null;});
-   }
   }catch(e){created.forEach(m=>m.close());throw e;}
  })();
  try{await loading;}finally{loading=null;}
@@ -219,23 +212,18 @@ function render(now){
    if(detectedFace.length){face=detectedFace;lastFaceSeen=now;}
    else if(now-lastFaceSeen>650)face=[];
    hands=handModel.detectForVideo(video,now).landmarks.map(h=>h.map(map));
-   tracking.textContent=`${face.length?'Face detected':'Show your face'} · ${hands.length?'Hand detected':'Show your hand'}${pose.length?' · Robe on':''}`;
+   tracking.textContent=`${face.length?'Face detected':'Show your face'} · ${hands.length?'Hand detected':'Show your hand'}`;
    gesture(now);
   }catch(e){tracking.textContent='인식이 잠시 멈췄어요. 카메라를 다시 켜주세요';handModel.close();faceModel.close();handModel=faceModel=null;cancelDrag();cursor.hidden=true;}
  }
- if(poseModel&&video.readyState>=2&&now-lastPoseDetect>160){
-  lastPoseDetect=now;
-  try{const detected=poseModel.detectForVideo(video,now).landmarks[0];if(detected){pose=detected.map(map);lastPoseSeen=now;}else if(now-lastPoseSeen>350)pose=[];}catch(e){pose=[];poseModel.close();poseModel=null;}
- }
  ctx.clearRect(0,0,canvas.width,canvas.height);
- robe.draw(ctx,pose,hands,video,stage);
  const b=basis();if(b)for(const s of stickers){if(drag?.existing===s)continue;const p=stickerPosition(s,b),draw=s.kind==='berry'?drawSticker:drawFittedPatch;draw(p,s.size*b.size,b.angle-Math.PI,s.kind);}
  if(drag)drawSticker(drag.p,drag.size,drag.angle||0,drag.kind);
  lip.draw(ctx,now);
  recording.draw();
  raf=requestAnimationFrame(render);
 }
-function closeCamera(){robe.reset();pose=[];lip.close();recording.stop();session++;cancelAnimationFrame(raf);stream?.getTracks().forEach(t=>t.stop());stream=null;video.srcObject=null;$('#camera').hidden=true;$('#welcome').hidden=false;cursor.hidden=true;reset();face=[];hands=[];trail=[];open=false;caseButton.classList.remove('open');caseButton.setAttribute('aria-expanded','false');film.hidden=true;packetOpen=false;tearStart=null;packet.classList.remove('open');packet.setAttribute('aria-expanded','false');patchTray.hidden=true;pointerId=null;lastVideo=-1;}
+function closeCamera(){lip.close();recording.stop();session++;cancelAnimationFrame(raf);stream?.getTracks().forEach(t=>t.stop());stream=null;video.srcObject=null;$('#camera').hidden=true;$('#welcome').hidden=false;cursor.hidden=true;reset();face=[];hands=[];trail=[];open=false;caseButton.classList.remove('open');caseButton.setAttribute('aria-expanded','false');film.hidden=true;packetOpen=false;tearStart=null;packet.classList.remove('open');packet.setAttribute('aria-expanded','false');patchTray.hidden=true;pointerId=null;lastVideo=-1;}
 $('#start').addEventListener('click',async()=>{
  if($('#start').disabled)return;$('#start').disabled=true;$('#error').hidden=true;const id=++session;
  try{
@@ -244,7 +232,7 @@ $('#start').addEventListener('click',async()=>{
   if(id!==session){acquired.getTracks().forEach(t=>t.stop());return;}
   stream=acquired;video.srcObject=stream;await video.play();
   $('#welcome').hidden=true;$('#camera').hidden=false;tracking.textContent='손·얼굴 인식 준비 중';message('처음에는 인식 모델을 불러오는 데 잠시 걸릴 수 있어요');raf=requestAnimationFrame(render);
-  try{await initModels();if(id!==session)return;message('어깨가 보이면 샤워가운이 자동으로 입혀져요. 케이스나 왼쪽 파우치를 열어보세요.');}
+  try{await initModels();if(id!==session)return;message('Open the case on the right, or pinch and tear open the pouch on the left.');}
   catch(e){if(id===session){tracking.textContent='인식 모델을 불러오지 못했어요';message('카메라를 다시 켜서 인식을 재시도해주세요. 케이스 클릭과 스티커 드래그도 가능해요');}}
  }catch(e){if(id===session){closeCamera();$('#error').textContent=e.name==='NotAllowedError'?'카메라 권한을 허용한 뒤 다시 눌러주세요.':e.name==='NotFoundError'?'연결된 카메라가 없어요.':e.message;$('#error').hidden=false;}}
  finally{$('#start').disabled=false;}

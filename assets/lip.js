@@ -1,7 +1,6 @@
 export function createLip({stage,face: getFace,message}){
  const tube=document.querySelector('#lip'),cap=document.querySelector('#lip-cap');
  let opened=false,readyAt=0,held=false,pointer=null,previous=null,rub=0,gloss=false,lastTouch=null,heldPoint=null,extrusion=0,drawTime=0;
- const gel=document.createElement('span');gel.className='lip-gel';gel.setAttribute('aria-hidden','true');tube.append(gel);
  const distance=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
  function local(e){const r=stage.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top};}
  function open(){if(opened)return;opened=true;readyAt=performance.now()+850;tube.classList.add('open');tube.setAttribute('aria-expanded','true');tube.setAttribute('aria-label','립 튜브 집어 입술에 바르기');message('열린 튜브를 집어 왼쪽 끝으로 입술을 문지른 뒤 놓아주세요');}
@@ -24,7 +23,7 @@ export function createLip({stage,face: getFace,message}){
   if(!held)return;const f=getFace(),width=f.length?distance(f[61],f[291]):Infinity;
   if(!cancel&&f.length&&rub>width*.25&&lastTouch!==null&&performance.now()-lastTouch<800){gloss=true;message('입술에 광택이 더해졌어요');}
   else if(!cancel)message('튜브의 왼쪽 끝으로 입술을 좌우로 문지른 뒤 놓아주세요');
-  held=false;heldPoint=null;extrusion=0;tube.style.setProperty('--gel-amount','0');previous=null;lastTouch=null;tube.classList.remove('held');tube.style.left='';tube.style.top='';
+  held=false;heldPoint=null;extrusion=0;previous=null;lastTouch=null;tube.classList.remove('held');tube.style.left='';tube.style.top='';
  }
  tube.addEventListener('click',()=>{if(!opened)open();});
  tube.addEventListener('pointerdown',e=>{if(!opened||held)return;if(grab(local(e))){pointer=e.pointerId;tube.setPointerCapture(e.pointerId);e.preventDefault();}});
@@ -35,23 +34,31 @@ export function createLip({stage,face: getFace,message}){
  function outline(ctx,f,indices){ctx.moveTo(f[indices[0]].x,f[indices[0]].y);for(const i of indices.slice(1))ctx.lineTo(f[i].x,f[i].y);ctx.closePath();}
  function drawExtrusion(ctx,now,f){
   const dt=drawTime?Math.min(50,Math.max(0,now-drawTime)):16;drawTime=now;
-  let touching=false;
-  if(held&&heldPoint&&f.length){
-   const tip={x:heldPoint.x-tube.offsetWidth*.49,y:heldPoint.y};
-   const width=distance(f[61],f[291]);
-   let nearest=Infinity;
-   for(let i=0;i<outer.length;i++){
-    const a=f[outer[i]],b=f[outer[(i+1)%outer.length]],dx=b.x-a.x,dy=b.y-a.y;
-    const t=Math.max(0,Math.min(1,((tip.x-a.x)*dx+(tip.y-a.y)*dy)/(dx*dx+dy*dy||1)));
-    nearest=Math.min(nearest,distance(tip,{x:a.x+t*dx,y:a.y+t*dy}));
-   }
-   touching=nearest<width*.6;
+  if(!held||!heldPoint||!f.length){extrusion=0;return;}
+  const tip={x:heldPoint.x-tube.offsetWidth*.49,y:heldPoint.y};
+  const width=distance(f[61],f[291]);
+  let target=null,nearest=Infinity;
+  for(let i=0;i<outer.length;i++){
+   const a=f[outer[i]],b=f[outer[(i+1)%outer.length]],dx=b.x-a.x,dy=b.y-a.y;
+   const t=Math.max(0,Math.min(1,((tip.x-a.x)*dx+(tip.y-a.y)*dy)/(dx*dx+dy*dy||1)));
+   const p={x:a.x+t*dx,y:a.y+t*dy},d=distance(tip,p);
+   if(d<nearest){target=p;nearest=d;}
   }
-  // A viscous bead grows directly out of the applicator and settles when lifted.
-  const target=touching?1:0;
-  extrusion+=(target-extrusion)*(1-Math.exp(-dt/(touching?180:120)));
-  if(extrusion<.005)extrusion=0;
-  tube.style.setProperty('--gel-amount',extrusion.toFixed(3));
+  if(nearest>width*.6||!target){extrusion=0;return;}
+  extrusion=Math.min(1,extrusion+dt/650);
+  const end={x:tip.x+(target.x-tip.x)*extrusion,y:tip.y+(target.y-tip.y)*extrusion};
+  const length=distance(tip,end),radius=Math.max(1.2,width*.025)*(1+.1*Math.sin(now*.006));
+  // Transparent gel ribbon with a refracted dark edge and a narrow moving reflection.
+  const angle=Math.atan2(end.y-tip.y,end.x-tip.x);
+  ctx.save();ctx.translate(tip.x,tip.y);ctx.rotate(angle);
+  const sag=Math.min(width*.055,length*.15);
+  const gel=ctx.createLinearGradient(0,-radius,0,radius+sag);
+  gel.addColorStop(0,'rgba(255,255,255,.65)');gel.addColorStop(.2,'rgba(245,252,255,.15)');gel.addColorStop(.48,'rgba(225,241,246,.04)');gel.addColorStop(.78,'rgba(81,101,111,.25)');gel.addColorStop(1,'rgba(255,255,255,.52)');
+  ctx.fillStyle=gel;ctx.beginPath();ctx.moveTo(0,-radius*.55);ctx.bezierCurveTo(length*.3,sag-radius,length*.7,sag-radius*.6,length,-radius*.4);ctx.quadraticCurveTo(length+radius,0,length,radius*.4);ctx.bezierCurveTo(length*.7,sag+radius*.6,length*.3,sag+radius,0,radius*.55);ctx.closePath();ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,.8)';ctx.lineWidth=Math.max(.6,width*.007);ctx.lineCap='round';ctx.beginPath();ctx.moveTo(length*.12,-radius*.45);ctx.quadraticCurveTo(length*.45,sag-radius*.8,length*.8,-radius*.3+sag*.5);ctx.stroke();
+  const bead=ctx.createRadialGradient(length-radius*.3,-radius*.4,0,length,0,radius*1.5);
+  bead.addColorStop(0,'rgba(255,255,255,.85)');bead.addColorStop(.3,'rgba(237,249,255,.16)');bead.addColorStop(.8,'rgba(100,120,130,.16)');bead.addColorStop(1,'rgba(255,255,255,.35)');
+  ctx.fillStyle=bead;ctx.beginPath();ctx.ellipse(length,0,radius*1.1,radius*1.35,0,0,Math.PI*2);ctx.fill();ctx.restore();
  }
  function draw(ctx,now){
   const f=getFace();drawExtrusion(ctx,now,f);if(!gloss||!f.length)return;
