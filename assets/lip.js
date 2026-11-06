@@ -34,16 +34,26 @@ export function createLip({stage,face: getFace,message}){
  function draw(ctx,now){
   const f=getFace();if(!gloss||!f.length)return;
   ctx.save();ctx.beginPath();outline(ctx,f,outer);outline(ctx,f,inner);ctx.clip('evenodd');
-  const width=distance(f[61],f[291]),top=Math.min(...outer.map(i=>f[i].y)),bottom=Math.max(...outer.map(i=>f[i].y));
-  const xs=outer.map(i=>f[i].x),left=Math.min(...xs),right=Math.max(...xs);
-  const gradient=ctx.createLinearGradient(0,top,0,bottom);
-  gradient.addColorStop(0,'rgba(255,235,240,.05)');gradient.addColorStop(.30,'rgba(255,245,246,.35)');gradient.addColorStop(.50,'rgba(255,228,235,.08)');gradient.addColorStop(.76,'rgba(255,250,248,.48)');gradient.addColorStop(1,'rgba(255,235,240,.07)');
-  ctx.fillStyle=gradient;ctx.fillRect(left,top,right-left,bottom-top);
-  ctx.globalCompositeOperation='screen';ctx.lineCap='round';ctx.strokeStyle='rgba(255,251,247,.72)';ctx.lineWidth=Math.max(1,width*.022);
-  const shine=(indices,offset)=>{ctx.beginPath();indices.forEach((i,n)=>{const p=f[i],q=f[offset];const x=p.x*.70+q.x*.30,y=p.y*.70+q.y*.30;n?ctx.lineTo(x,y):ctx.moveTo(x,y);});ctx.stroke();};
-  shine([91,84,17,314],14);shine([37,0,267],13);
-  ctx.fillStyle=`rgba(255,255,255,${.5+Math.sin(now*.003)*.12})`;
-  for(const i of [84,314,37]){const p=f[i],q=f[14];ctx.beginPath();ctx.ellipse(p.x*.7+q.x*.3,p.y*.7+q.y*.3,Math.max(.8,width*.012),Math.max(.6,width*.007),0,0,Math.PI*2);ctx.fill();}
+  const width=distance(f[61],f[291]);
+  const angle=Math.atan2(f[291].y-f[61].y,f[291].x-f[61].x);
+  // Only small specular reflections: leave the lip color and texture untouched.
+  const reflections=[{edge:84,inner:14,t:.38,phase:0},{edge:17,inner:14,t:.48,phase:1.8},{edge:314,inner:14,t:.42,phase:3.4},{edge:37,inner:13,t:.42,phase:4.5}];
+  for(const r of reflections){
+   const edge=f[r.edge],inside=f[r.inner];
+   const x=edge.x*(1-r.t)+inside.x*r.t,y=edge.y*(1-r.t)+inside.y*r.t;
+   const pulse=Math.pow((Math.sin(now*.0025+r.phase)+1)/2,4);
+   ctx.save();ctx.translate(x,y);ctx.rotate(angle);
+   const rx=Math.max(.65,width*(.012+pulse*.008)),ry=Math.max(.35,width*.004);
+   const glow=ctx.createRadialGradient(0,0,0,0,0,rx*2.3);
+   glow.addColorStop(0,`rgba(255,255,255,${.12+pulse*.18})`);glow.addColorStop(1,'rgba(255,255,255,0)');
+   ctx.fillStyle=glow;ctx.beginPath();ctx.ellipse(0,0,rx*2.3,ry*3,0,0,Math.PI*2);ctx.fill();
+   ctx.fillStyle=`rgba(255,255,255,${.25+pulse*.58})`;ctx.beginPath();ctx.ellipse(0,0,rx,ry,0,0,Math.PI*2);ctx.fill();
+   if(pulse>.8){
+    const length=width*.018*(pulse-.8)/.2;
+    ctx.strokeStyle=`rgba(255,255,255,${(pulse-.8)*2})`;ctx.lineWidth=Math.max(.35,width*.003);ctx.beginPath();ctx.moveTo(-length,0);ctx.lineTo(length,0);ctx.moveTo(0,-length);ctx.lineTo(0,length);ctx.stroke();
+   }
+   ctx.restore();
+  }
   ctx.restore();
  }
  return{
