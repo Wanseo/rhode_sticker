@@ -11,21 +11,13 @@ function message(s){hint.textContent=s;}
 function openCase(){
   if(open)return; open=true; caseButton.classList.add('open');caseButton.setAttribute('aria-expanded','true');
   film.hidden=false;
-  const caseRect=caseButton.getBoundingClientRect();
-  // Layout offsets are unaffected by the sheet's animated transform.
-  const x=caseButton.offsetLeft+(caseRect.width-film.offsetWidth)/2-film.offsetLeft;
-  const y=caseButton.offsetTop+caseRect.height*.16-film.offsetTop;
-  const lift=Math.max(65,caseButton.offsetTop-film.offsetHeight-14)-film.offsetTop;
-  film.style.setProperty('--sheet-x',x+'px');
-  film.style.setProperty('--sheet-y',y+'px');
-  film.style.setProperty('--sheet-lift',lift+'px');
-  filmReadyAt=performance.now()+2450;
+  filmReadyAt=performance.now()+1850;
   message('딸기를 엄지·검지로 집어 얼굴로 가져간 뒤 손가락을 펴주세요');
 }
 function reset(){stickers=[];drag=null;pinching=false;film.querySelectorAll('button').forEach(b=>b.classList.remove('used'));}
 for(let i=0;i<9;i++){
  const b=document.createElement('button');b.ariaLabel=`딸기 스티커 ${i+1} 집기`;b.innerHTML='<img src="assets/strawberry.svg" alt="딸기">';film.append(b);
- b.addEventListener('pointerdown',e=>{if(drag||performance.now()<filmReadyAt)return;e.preventDefault();pointerId=e.pointerId;b.setPointerCapture(e.pointerId);pick(b,local(e.clientX,e.clientY));});
+ b.addEventListener('pointerdown',e=>{if(drag||performance.now()<filmReadyAt||!stickerExposed(b))return;e.preventDefault();pointerId=e.pointerId;b.setPointerCapture(e.pointerId);pick(b,local(e.clientX,e.clientY));});
  b.addEventListener('pointermove',e=>{if(pointerId===e.pointerId&&drag)drag.p=local(e.clientX,e.clientY);});
  b.addEventListener('pointerup',e=>{if(pointerId===e.pointerId){drop();pointerId=null;}});
  b.addEventListener('pointercancel',()=>{cancelDrag();pointerId=null;});
@@ -40,6 +32,10 @@ function map(p){
  return{x:(1-p.x)*vw+(w-vw)/2,y:p.y*vh+(h-vh)/2};
 }
 function basis(){if(!face.length)return null;const a=face[33],b=face[263];const size=dist(a,b);if(size<10)return null;return{size,angle:Math.atan2(b.y-a.y,b.x-a.x)};}
+function stickerExposed(button){
+ const r=button.getBoundingClientRect(), sheet=film.getBoundingClientRect();
+ return r.top+r.height/2 < sheet.top+sheet.height*2/3;
+}
 function pick(button,p){if(drag)return;button.classList.add('used');drag={button,p,size:Math.min(64,stage.clientWidth*.09)};}
 function cancelDrag(){if(drag)drag.button.classList.remove('used');drag=null;}
 function drop(){
@@ -88,7 +84,7 @@ function gesture(now){
   if(near&&trail.length>3&&trail.some(t=>dist(t,palm)>Math.max(35,stage.clientWidth*.07))&&!next)openCase();
  }
  if(next&&!pinching&&open&&!drag&&now>filmReadyAt){
-  for(const b of film.querySelectorAll('button:not(.used)')){const r=b.getBoundingClientRect(),s=stage.getBoundingClientRect();if(p.x>=r.left-s.left-10&&p.x<=r.right-s.left+10&&p.y>=r.top-s.top-10&&p.y<=r.bottom-s.top+10){pick(b,p);break;}}
+  for(const b of film.querySelectorAll('button:not(.used)')){if(!stickerExposed(b))continue;const r=b.getBoundingClientRect(),s=stage.getBoundingClientRect();if(p.x>=r.left-s.left-10&&p.x<=r.right-s.left+10&&p.y>=r.top-s.top-10&&p.y<=r.bottom-s.top+10){pick(b,p);break;}}
  }
  if(drag&&next)drag.p=p;
  if(pinching&&!next&&drag)drop();
