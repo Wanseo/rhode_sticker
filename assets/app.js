@@ -1,3 +1,4 @@
+import { createLip } from './lip.js';
 import { createRecorder } from './recorder.js';
 const $ = s => document.querySelector(s);
 const video=$('#video'), stage=$('#stage'), canvas=$('#overlay'), ctx=canvas.getContext('2d');
@@ -9,6 +10,7 @@ const packet=$('#packet'),patchTray=$('#patch-tray');
 let packetOpen=false,tearStart=null,patchReadyAt=0;
 let stream, handModel, faceModel, loading, session=0, raf, lastVideo=-1, lastDetect=0;
 let face=[], hands=[], stickers=[], drag=null, pinching=false, trail=[], open=false, pointerId=null, lastHandSeen=0, filmReadyAt=0;
+const lip=createLip({stage,face:()=>face,message});
 const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
 function message(s){hint.textContent=s;}
 function openCase(){
@@ -17,7 +19,7 @@ function openCase(){
   filmReadyAt=performance.now()+2350;
   message('딸기를 엄지·검지로 집어 얼굴로 가져간 뒤 손가락을 펴주세요');
 }
-function reset(){stickers=[];drag=null;pinching=false;document.querySelectorAll('#film button, #patch-tray button').forEach(b=>b.classList.remove('used'));}
+function reset(){lip.reset();stickers=[];drag=null;pinching=false;document.querySelectorAll('#film button, #patch-tray button').forEach(b=>b.classList.remove('used'));}
 for(let i=0;i<9;i++){
  const rear=document.createElement('span');rear.innerHTML='<img src="assets/strawberry.svg" alt="">';$('#rear-film').append(rear);
  const b=document.createElement('button');b.ariaLabel=`딸기 스티커 ${i+1} 집기`;b.innerHTML='<img src="assets/strawberry.svg" alt="딸기">';film.append(b);
@@ -94,13 +96,14 @@ async function initModels(){
 }
 function gesture(now){
  if(pointerId!==null)return;
- if(!hands.length){cursor.hidden=true;if(now-lastHandSeen>450){cancelDrag();pinching=false;trail=[];tearStart=null;}return;}
+ if(!hands.length){cursor.hidden=true;if(now-lastHandSeen>450){cancelDrag();lip.cancel();pinching=false;trail=[];tearStart=null;}return;}
  lastHandSeen=now;
  const h=hands[0],p={x:(h[4].x+h[8].x)/2,y:(h[4].y+h[8].y)/2};
  cursor.hidden=false;cursor.style.left=p.x+'px';cursor.style.top=p.y+'px';
  const ratio=dist(h[4],h[8])/Math.max(1,dist(h[0],h[9]));
  const next=pinching?ratio<.48:ratio<.30;
  cursor.classList.toggle('pinching',next);
+ if(lip.gesture(p,next,pinching,!!drag)){pinching=next;return;}
  if(!open){
   const palm=h[9],r=caseButton.getBoundingClientRect(),q=stage.getBoundingClientRect();
   trail.push({x:palm.x,y:palm.y,t:now});trail=trail.filter(p=>now-p.t<650);
@@ -141,10 +144,11 @@ function render(now){
  ctx.clearRect(0,0,canvas.width,canvas.height);
  const b=basis();if(b)for(const s of stickers){const c=Math.cos(b.angle),sn=Math.sin(b.angle),p=face[s.index];drawSticker({x:p.x+(s.u*c-s.v*sn)*b.size,y:p.y+(s.u*sn+s.v*c)*b.size},s.size*b.size,b.angle-Math.PI,s.kind);}
  if(drag)drawSticker(drag.p,drag.size,0,drag.kind);
+ lip.draw(ctx,now);
  recording.draw();
  raf=requestAnimationFrame(render);
 }
-function closeCamera(){recording.stop();session++;cancelAnimationFrame(raf);stream?.getTracks().forEach(t=>t.stop());stream=null;video.srcObject=null;$('#camera').hidden=true;$('#welcome').hidden=false;cursor.hidden=true;reset();face=[];hands=[];trail=[];open=false;caseButton.classList.remove('open');caseButton.setAttribute('aria-expanded','false');film.hidden=true;packetOpen=false;tearStart=null;packet.classList.remove('open');packet.setAttribute('aria-expanded','false');patchTray.hidden=true;pointerId=null;lastVideo=-1;}
+function closeCamera(){lip.close();recording.stop();session++;cancelAnimationFrame(raf);stream?.getTracks().forEach(t=>t.stop());stream=null;video.srcObject=null;$('#camera').hidden=true;$('#welcome').hidden=false;cursor.hidden=true;reset();face=[];hands=[];trail=[];open=false;caseButton.classList.remove('open');caseButton.setAttribute('aria-expanded','false');film.hidden=true;packetOpen=false;tearStart=null;packet.classList.remove('open');packet.setAttribute('aria-expanded','false');patchTray.hidden=true;pointerId=null;lastVideo=-1;}
 $('#start').addEventListener('click',async()=>{
  if($('#start').disabled)return;$('#start').disabled=true;$('#error').hidden=true;const id=++session;
  try{
