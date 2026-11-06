@@ -1,3 +1,4 @@
+import {createNeckMask} from './neck-mask.js';
 export function createRobe(){
  // A photographed looped-pile material is loaded once and reused in every frame.
  const tile=document.createElement('canvas');tile.width=tile.height=512;const t=tile.getContext('2d');
@@ -6,9 +7,10 @@ export function createRobe(){
  fabric.onload=()=>{t.drawImage(fabric,0,0,512,512);};
  fabric.src=new URL('./robe-terry-v1.png',import.meta.url).href;
  const torso=new Image();torso.decoding='async';torso.src=new URL('./robe-body-v1.png',import.meta.url).href;
+ const neckMask=createNeckMask();
  let smooth=[];const armShapes=new Map();
- function reset(){smooth=[];armShapes.clear();}
- function draw(ctx,pose,hands,face=[]){
+ function reset(){smooth=[];armShapes.clear();neckMask.reset();}
+ function draw(ctx,pose,hands,face=[],video,stage){
   if(!pose.length||pose[11].visibility<.5||pose[12].visibility<.5){reset();return;}
   smooth=pose.map((p,i)=>smooth[i]?{...p,x:smooth[i].x*.35+p.x*.65,y:smooth[i].y*.35+p.y*.65}:p);
   let l=smooth[11],r=smooth[12];if(l.x>r.x)[l,r]=[r,l];
@@ -21,9 +23,9 @@ export function createRobe(){
   const bottom=Math.max(1.65,...hips.map(p=>p.y+.75));
   const robeLift=-.23;
   ctx.save();ctx.translate(center.x,center.y);ctx.rotate(angle);ctx.scale(span,span);ctx.translate(0,robeLift);
-  const texture=ctx.createPattern(tile,'repeat');texture.setTransform(new DOMMatrix().scale(.0011));
-  function cloth(path,light=false){
-   ctx.save();ctx.shadowColor='rgba(59,56,45,.25)';ctx.shadowBlur=4;ctx.shadowOffsetY=2;
+  const texture=ctx.createPattern(tile,'repeat');texture.setTransform(new DOMMatrix().scale(.0008));
+  function cloth(path,light=false,castShadow=true){
+   ctx.save();ctx.shadowColor=castShadow?'rgba(59,56,45,.25)':'transparent';ctx.shadowBlur=4;ctx.shadowOffsetY=2;
    ctx.fillStyle=texture;ctx.fill(path);ctx.shadowColor='transparent';
    ctx.save();ctx.clip(path);
    const g=ctx.createLinearGradient(-.65,-.1,.65,.4);
@@ -68,14 +70,17 @@ export function createRobe(){
    b.y-=robeLift;c.y-=robeLift;
 
    const unit=(p,q)=>{const d=Math.hypot(q.x-p.x,q.y-p.y)||1;return{x:-(q.y-p.y)/d,y:(q.x-p.x)/d};};
-   const u=unit(a,b),v=unit(b,c),end={x:c.x+(b.x-c.x)*.13,y:c.y+(b.y-c.y)*.13};
-   const path=new Path2D();
-   path.moveTo(a.x+u.x*shoulderRadius,a.y+u.y*shoulderRadius);
+   let u=unit(a,b),v=unit(b,c);
+   if(u.x*side<0)u={x:-u.x,y:-u.y};if(u.x*v.x+u.y*v.y<0)v={x:-v.x,y:-v.y};
+   const end={x:c.x+(b.x-c.x)*.13,y:c.y+(b.y-c.y)*.13};
+   const root={x:a.x-side*.16,y:a.y-.12},outer={x:a.x+u.x*shoulderRadius,y:a.y+u.y*shoulderRadius+.08};
+   const inner={x:a.x-side*.17,y:a.y+.23};
+   const path=new Path2D();path.moveTo(root.x,root.y);
+   path.bezierCurveTo(a.x+side*.04,a.y-.09,outer.x,outer.y-.035,outer.x,outer.y);
    path.quadraticCurveTo(b.x+u.x*elbowRadius,b.y+u.y*elbowRadius,end.x+v.x*.15,end.y+v.y*.15);
    path.lineTo(end.x-v.x*.15,end.y-v.y*.15);
-   path.quadraticCurveTo(b.x-u.x*elbowRadius,b.y-u.y*elbowRadius,a.x-u.x*shoulderRadius,a.y-u.y*shoulderRadius);
-   const armLength=Math.hypot(b.x-a.x,b.y-a.y)||1,dx=(b.x-a.x)/armLength,dy=(b.y-a.y)/armLength;
-   path.bezierCurveTo(a.x-u.x*shoulderRadius-dx*.18,a.y-u.y*shoulderRadius-dy*.18,a.x+u.x*shoulderRadius-dx*.18,a.y+u.y*shoulderRadius-dy*.18,a.x+u.x*shoulderRadius,a.y+u.y*shoulderRadius);path.closePath();cloth(path);
+   path.quadraticCurveTo(b.x-u.x*elbowRadius,b.y-u.y*elbowRadius,inner.x,inner.y);
+   path.bezierCurveTo(root.x-side*.025,inner.y-.04,root.x-side*.015,root.y+.08,root.x,root.y);path.closePath();cloth(path,false,false);
    drape(path,[[a.x,a.y,b.x,b.y,.10,.22],[b.x,b.y,end.x,end.y,.07,.27]]);
    ctx.strokeStyle='rgba(156,151,132,.15)';ctx.lineWidth=.012;ctx.lineCap='round';
    ctx.beginPath();ctx.moveTo(b.x+v.x*.12,b.y+v.y*.12);ctx.lineTo(end.x+v.x*.12,end.y+v.y*.12);ctx.stroke();
@@ -120,6 +125,8 @@ export function createRobe(){
    oval.forEach((index,i)=>{const p=face[index],next=face[oval[(i+1)%oval.length]];ctx.quadraticCurveTo(p.x,p.y,(p.x+next.x)/2,(p.y+next.y)/2);});
    ctx.closePath();ctx.fill();ctx.stroke();
    // Open the back collar below the jaw as well, preserving the real neck.
+   const skinDetected=neckMask.erase(ctx,video,stage,face,center,span);
+   if(!skinDetected){
    const chin=face[152],forehead=face[10],left=face[234],right=face[454];
    const faceWidth=Math.hypot(right.x-left.x,right.y-left.y)||1;
    const faceHeight=Math.hypot(chin.x-forehead.x,chin.y-forehead.y)||1;
@@ -135,7 +142,9 @@ export function createRobe(){
    const tip=edge(1+faceHeight*.35/length,0),lowerLeft=edge(1+faceHeight*.12/length,-1.12),lowerRight=edge(1+faceHeight*.12/length,1.12);
    ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.bezierCurveTo(b.x,b.y,c.x,c.y,d.x,d.y);
    ctx.quadraticCurveTo(lowerLeft.x,lowerLeft.y,tip.x,tip.y);ctx.quadraticCurveTo(lowerRight.x,lowerRight.y,e.x,e.y);
-   ctx.bezierCurveTo(f.x,f.y,g.x,g.y,h.x,h.y);ctx.closePath();ctx.fill();ctx.stroke();ctx.restore();
+   ctx.bezierCurveTo(f.x,f.y,g.x,g.y,h.x,h.y);ctx.closePath();ctx.fill();ctx.stroke();
+   }
+   ctx.restore();
   }
   // Cut the garment away from hands so the live video remains untouched.
   for(const hand of hands){
