@@ -1,4 +1,4 @@
-export function createRecorder({video,stage,overlay,button,download,message}) {
+export function createRecorder({video,stage,overlay,backgroundOverlay,button,download,message}) {
   const output=document.createElement('canvas'), context=output.getContext('2d');
   let recorder=null, captured=null, url=null, failed=false;
   function drawFrame(){
@@ -10,6 +10,7 @@ export function createRecorder({video,stage,overlay,button,download,message}) {
     context.fillStyle='#37352e';context.fillRect(0,0,w,h);
     context.save();context.translate(w,0);context.scale(-1,1);
     context.drawImage(video,(w-vw)/2,(h-vh)/2,vw,vh);context.restore();
+    if(backgroundOverlay?.width&&backgroundOverlay.height)context.drawImage(backgroundOverlay,0,0,w,h);
     if(overlay.width&&overlay.height)context.drawImage(overlay,0,0,w,h);
   }
   function stop(){

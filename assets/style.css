@@ -56,3 +56,6 @@
 /* Reveal the original sheet pocket without resizing the shell or moving its logo. */
 #case.open .case-body{clip-path:polygon(0 38%,10% 38%,14% 43.58%,21% 49.16%,31% 53.5%,42% 55.98%,50% 56.6%,58% 55.98%,69% 53.5%,79% 49.16%,86% 43.58%,90% 38%,100% 38%,100% 100%,0 100%)}
 #case.open .case-body::before{visibility:hidden}
+
+/* Garment stays behind products and face effects, above the camera video. */
+#robe-overlay{z-index:1}

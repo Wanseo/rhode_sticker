@@ -3,8 +3,9 @@ import { createLip } from './lip.js';
 import { createRecorder } from './recorder.js';
 const $ = s => document.querySelector(s);
 const video=$('#video'), stage=$('#stage'), canvas=$('#overlay'), ctx=canvas.getContext('2d');
+const robeCanvas=$('#robe-overlay'),robeContext=robeCanvas.getContext('2d');
 const film=$('#film'), caseButton=$('#case'), hint=$('#hint'), tracking=$('#tracking'), cursor=$('#cursor');
-const recording=createRecorder({video,stage,overlay:canvas,button:$('#record'),download:$('#download'),message});
+const recording=createRecorder({video,stage,overlay:canvas,backgroundOverlay:robeCanvas,button:$('#record'),download:$('#download'),message});
 const berry=new Image(); berry.src='assets/strawberry.svg';
 const patch=new Image();
 const patchTexture=document.createElement('canvas');patchTexture.width=720;patchTexture.height=432;
@@ -233,7 +234,7 @@ function drawFittedPatch(p,size,angle,kind){
 }
 function render(now){
  if(!stream)return;
- if(canvas.width!==stage.clientWidth||canvas.height!==stage.clientHeight){canvas.width=stage.clientWidth;canvas.height=stage.clientHeight;}
+ for(const layer of [canvas,robeCanvas])if(layer.width!==stage.clientWidth||layer.height!==stage.clientHeight){layer.width=stage.clientWidth;layer.height=stage.clientHeight;}
  if(handModel&&faceModel&&video.readyState>=2&&lastVideo!==video.currentTime&&now-lastDetect>65){
   lastVideo=video.currentTime;lastDetect=now;
   try{
@@ -247,7 +248,8 @@ function render(now){
  }
  trackRobe(now);
  ctx.clearRect(0,0,canvas.width,canvas.height);
- robe.draw(ctx,pose,hands);
+ robeContext.clearRect(0,0,robeCanvas.width,robeCanvas.height);
+ robe.draw(robeContext,pose,hands);
  const b=basis();if(b)for(const s of stickers){if(drag?.existing===s)continue;const p=stickerPosition(s,b),draw=s.kind==='berry'?drawSticker:drawFittedPatch;draw(p,s.size*b.size,b.angle-Math.PI,s.kind);}
  if(drag)drawSticker(drag.p,drag.size,drag.angle||0,drag.kind);
  lip.draw(ctx,now);
