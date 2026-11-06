@@ -182,10 +182,10 @@ export function createRobe(){
    ctx.restore();
   }
   // Real forearms in front of the torso occlude the garment along their skin outline.
-  neckMask.eraseArms(ctx,smooth,hands,center,span);
+  const pixelOcclusion=neckMask.eraseArms(ctx,smooth,hands,center,span);
   // Cut the garment away from hands so the live video remains untouched.
-  for(const hand of hands){
-   ctx.save();ctx.globalCompositeOperation='destination-out';ctx.fillStyle='#000';ctx.shadowColor='#000';ctx.shadowBlur=2;ctx.beginPath();
+  if(!pixelOcclusion)for(const hand of hands){
+   ctx.save();ctx.globalCompositeOperation='destination-out';ctx.fillStyle='#000';ctx.shadowColor='#000';ctx.shadowBlur=.5;ctx.beginPath();
    const palm=[0,1,2,5,9,13,17];
    palm.forEach((i,n)=>{const p=hand[i];n?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y);});ctx.closePath();
    const palmSize=Math.hypot(hand[0].x-hand[9].x,hand[0].y-hand[9].y);
@@ -200,5 +200,5 @@ export function createRobe(){
    ctx.fill();ctx.restore();
   }
  }
- return{draw,reset};
+ return{draw,reset,captureFrame:neckMask.capture};
 }

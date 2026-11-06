@@ -1,7 +1,7 @@
 // A softly bowed opening with a slightly offset wrap point, shared by both masks.
 export function necklineBounds(t,direction=1){
  const a=Math.max(0,(t-.14)/.86),b=Math.max(0,(t-.10)/.90);
- const left=-.27-.13*Math.sin(Math.PI*a**1.05)+.345*a**3.8;
+ const left=-.33-.07*Math.sin(Math.PI*a**1.05)+.405*a**3.8;
  const right=.27+.16*Math.sin(Math.PI*b**1.10)-.195*b**2.4;
  return direction<0?{left:-right,right:-left}:{left,right};
 }

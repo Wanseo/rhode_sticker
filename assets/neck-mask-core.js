@@ -22,7 +22,7 @@ export function createNeckProcessor(){
   if(width<2||height<2)return null;
   {
    try{
-    const w=240,h=Math.max(1,Math.round(vh*w/vw));
+    const w=Math.min(480,vw),h=Math.max(1,Math.round(vh*w/vw));
     if(sample.width!==w||sample.height!==h){sample.width=w;sample.height=h;}
     read.drawImage(video,0,0,w,h);const pixels=read.getImageData(0,0,w,h).data;
     const fit=stage.fit==='cover'?Math.max:Math.min,scale=fit(sw/vw,sh/vh),ox=(sw-vw*scale)/2,oy=(sh-vh*scale)/2;
@@ -42,7 +42,7 @@ export function createNeckProcessor(){
      const current={cb:median(colors.map(c=>c.cb)),cr:median(colors.map(c=>c.cr)),y:median(colors.map(c=>c.y))};
      skin=skin?{cb:skin.cb*.6+current.cb*.4,cr:skin.cr*.6+current.cr*.4,y:current.y}:current;
     }
-    const mw=112,mh=Math.max(24,Math.min(192,Math.round(height/width*mw))),size=mw*mh;
+    const mw=160,mh=Math.max(24,Math.min(192,Math.round(height/width*mw))),size=mw*mh;
     const candidate=new Uint8Array(size);
     if(skin)for(let j=0;j<mh;j++)for(let i=0;i<mw;i++){
      const px=x+(i+.5)*width/mw,py=y+(j+.5)*height/mh;
@@ -80,16 +80,23 @@ export function createNeckProcessor(){
     }
     const outline=rows.map((row,index)=>{
      let left=0,right=0,total=0;
-     for(let n=Math.max(0,index-2);n<=Math.min(rows.length-1,index+2);n++){
-      const weight=3-Math.abs(n-index);left+=rows[n].left*weight;right+=rows[n].right*weight;total+=weight;
+     for(let n=Math.max(0,index-3);n<=Math.min(rows.length-1,index+3);n++){
+      const weight=4-Math.abs(n-index);left+=rows[n].left*weight;right+=rows[n].right*weight;total+=weight;
      }
      return{y:row.y,left:left/total,right:right/total};
     });
-    const contour=[...outline.map(p=>({x:p.left,y:p.y})),...outline.slice().reverse().map(p=>({x:p.right,y:p.y}))];
+    // Fit a few continuous cubic spans instead of tracing each noisy pixel row.
+    const count=Math.min(12,Math.max(5,Math.ceil(outline.length/12))),knots=[];
+    if(outline.length)for(let i=0;i<count;i++)knots.push(outline[Math.round(i/(count-1)*(outline.length-1))]);
+    const contour=[...knots.map(p=>({x:p.left,y:p.y})),...knots.slice().reverse().map(p=>({x:p.right,y:p.y}))];
     paint.clearRect(0,0,mw,mh);paint.fillStyle='#fff';paint.beginPath();
     if(contour.length){
-     const first=contour[0],last=contour[contour.length-1];paint.moveTo((first.x+last.x)/2,(first.y+last.y)/2);
-     contour.forEach((p,i)=>{const next=contour[(i+1)%contour.length];paint.quadraticCurveTo(p.x,p.y,(p.x+next.x)/2,(p.y+next.y)/2);});paint.closePath();paint.fill();
+     paint.moveTo(contour[0].x,contour[0].y);
+     for(let i=0;i<contour.length;i++){
+      const p0=contour[(i+contour.length-1)%contour.length],p1=contour[i],p2=contour[(i+1)%contour.length],p3=contour[(i+2)%contour.length];
+      paint.bezierCurveTo(p1.x+(p2.x-p0.x)/6,p1.y+(p2.y-p0.y)/6,p2.x-(p3.x-p1.x)/6,p2.y-(p3.y-p1.y)/6,p2.x,p2.y);
+     }
+     paint.closePath();paint.fill();
     }
     hasMask=tail>0;
    }catch(e){hasMask=false;}

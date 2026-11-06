@@ -241,6 +241,7 @@ function render(now){
    const detectedFace=(faceModel.detectForVideo(video,now).faceLandmarks[0]||[]).map(map);
    if(detectedFace.length){face=detectedFace;lastFaceSeen=now;}
    else if(now-lastFaceSeen>650)face=[];
+   robe.captureFrame(video);
    hands=handModel.detectForVideo(video,now).landmarks.map(h=>h.map(map));
    tracking.textContent=`${face.length?'Face detected':'Show your face'} · ${hands.length?'Hand detected':'Show your hand'}`;
    gesture(now);
