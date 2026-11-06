@@ -1,6 +1,8 @@
+import { createRecorder } from './recorder.js';
 const $ = s => document.querySelector(s);
 const video=$('#video'), stage=$('#stage'), canvas=$('#overlay'), ctx=canvas.getContext('2d');
 const film=$('#film'), caseButton=$('#case'), hint=$('#hint'), tracking=$('#tracking'), cursor=$('#cursor');
+const recording=createRecorder({video,stage,overlay:canvas,button:$('#record'),download:$('#download'),message});
 const berry=new Image(); berry.src='assets/strawberry.svg';
 let stream, handModel, faceModel, loading, session=0, raf, lastVideo=-1, lastDetect=0;
 let face=[], hands=[], stickers=[], drag=null, pinching=false, trail=[], open=false, pointerId=null, lastHandSeen=0, filmReadyAt=0;
@@ -99,9 +101,10 @@ function render(now){
  ctx.clearRect(0,0,canvas.width,canvas.height);
  const b=basis();if(b)for(const s of stickers){const c=Math.cos(b.angle),sn=Math.sin(b.angle),p=face[s.index];drawBerry({x:p.x+(s.u*c-s.v*sn)*b.size,y:p.y+(s.u*sn+s.v*c)*b.size},s.size*b.size,b.angle-Math.PI);}
  if(drag)drawBerry(drag.p,drag.size);
+ recording.draw();
  raf=requestAnimationFrame(render);
 }
-function closeCamera(){session++;cancelAnimationFrame(raf);stream?.getTracks().forEach(t=>t.stop());stream=null;video.srcObject=null;$('#camera').hidden=true;$('#welcome').hidden=false;cursor.hidden=true;reset();face=[];hands=[];trail=[];open=false;caseButton.classList.remove('open');caseButton.setAttribute('aria-expanded','false');film.hidden=true;pointerId=null;lastVideo=-1;}
+function closeCamera(){recording.stop();session++;cancelAnimationFrame(raf);stream?.getTracks().forEach(t=>t.stop());stream=null;video.srcObject=null;$('#camera').hidden=true;$('#welcome').hidden=false;cursor.hidden=true;reset();face=[];hands=[];trail=[];open=false;caseButton.classList.remove('open');caseButton.setAttribute('aria-expanded','false');film.hidden=true;pointerId=null;lastVideo=-1;}
 $('#start').addEventListener('click',async()=>{
  if($('#start').disabled)return;$('#start').disabled=true;$('#error').hidden=true;const id=++session;
  try{

@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ko">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#fff9c4"><title>rhode</title>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#ffffff"><title>rhode</title>
 <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
@@ -14,9 +14,11 @@
 <button id="case" aria-label="스티커 케이스 열기" aria-expanded="false"><span class="lid"><span>rhode</span></span><span class="case-inside"></span><span class="case-body"><span>rhode</span></span></button>
 <div id="cursor" hidden></div>
 <div class="topline"><span class="wordmark">rhode</span><span id="tracking" role="status">카메라 준비 중</span></div>
+<button id="record" type="button" aria-label="영상 녹화 시작" aria-pressed="false"><span></span></button>
 <p id="hint" role="status">손과 얼굴 인식을 준비하고 있어요</p>
 </div>
 <div class="controls"><button id="reset">스티커 지우기</button><button id="close">카메라 닫기</button></div>
+<a id="download" hidden>영상 저장</a>
 </section>
 </main>
 <script type="module" src="assets/app.js"></script>
