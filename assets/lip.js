@@ -43,14 +43,14 @@ export function createLip({stage,face: getFace,message}){
    const x=edge.x*(1-r.t)+inside.x*r.t,y=edge.y*(1-r.t)+inside.y*r.t;
    const pulse=Math.pow((Math.sin(now*.0025+r.phase)+1)/2,4);
    ctx.save();ctx.translate(x,y);ctx.rotate(angle);
-   const rx=Math.max(.65,width*(.012+pulse*.008)),ry=Math.max(.35,width*.004);
+   const rx=Math.max(.9,width*(.021+pulse*.014)),ry=Math.max(.5,width*.007);
    const glow=ctx.createRadialGradient(0,0,0,0,0,rx*2.3);
    glow.addColorStop(0,`rgba(255,255,255,${.12+pulse*.18})`);glow.addColorStop(1,'rgba(255,255,255,0)');
    ctx.fillStyle=glow;ctx.beginPath();ctx.ellipse(0,0,rx*2.3,ry*3,0,0,Math.PI*2);ctx.fill();
    ctx.fillStyle=`rgba(255,255,255,${.25+pulse*.58})`;ctx.beginPath();ctx.ellipse(0,0,rx,ry,0,0,Math.PI*2);ctx.fill();
    if(pulse>.8){
-    const length=width*.018*(pulse-.8)/.2;
-    ctx.strokeStyle=`rgba(255,255,255,${(pulse-.8)*2})`;ctx.lineWidth=Math.max(.35,width*.003);ctx.beginPath();ctx.moveTo(-length,0);ctx.lineTo(length,0);ctx.moveTo(0,-length);ctx.lineTo(0,length);ctx.stroke();
+    const length=width*.03*(pulse-.8)/.2;
+    ctx.strokeStyle=`rgba(255,255,255,${(pulse-.8)*2})`;ctx.lineWidth=Math.max(.45,width*.004);ctx.beginPath();ctx.moveTo(-length,0);ctx.lineTo(length,0);ctx.moveTo(0,-length);ctx.lineTo(0,length);ctx.stroke();
    }
    ctx.restore();
   }
