@@ -114,7 +114,8 @@ function drop(){
   const inside=drag.p.x>=Math.min(...xs)&&drag.p.x<=Math.max(...xs)&&drag.p.y>=Math.min(...ys)&&drag.p.y<=Math.max(...ys);
   if(inside&&nearest<base.size*.45){
    const dx=drag.p.x-face[index].x,dy=drag.p.y-face[index].y,c=Math.cos(base.angle),s=Math.sin(base.angle);
-   const placement={index,u:(dx*c+dy*s)/base.size,v:(-dx*s+dy*c)/base.size,size:drag.size/base.size,kind:drag.kind};
+   const pairedPatch=drag.kind.startsWith('patch')?stickers.find(s=>s!==drag.existing&&s.kind.startsWith('patch')):null;
+   const placement={index,u:(dx*c+dy*s)/base.size,v:(-dx*s+dy*c)/base.size,size:pairedPatch?.size??drag.size/base.size,kind:drag.kind};
    if(drag.existing)Object.assign(drag.existing,placement);else stickers.push(placement);
    drag=null;message('Sticker applied! Pick up another sticker and try it on.');return;
   }
@@ -212,7 +213,7 @@ function drawFittedPatch(p,size,angle,kind){
  const tilt=Math.max(-.22,Math.min(.22,delta))*.65;
  const leftSpan=dist(face[234],nose),rightSpan=dist(face[454],nose);
  const yaw=Math.max(-.4,Math.min(.4,(leftSpan-rightSpan)/Math.max(1,leftSpan+rightSpan)));
- const compression=1-Math.max(0,-side*yaw)*.3;
+ const compression=1-Math.abs(yaw)*.3;
  const bend=size*(.06+Math.abs(yaw)*.05);
  ctx.save();ctx.translate(p.x,p.y);ctx.rotate(angle+tilt);
  // Narrow texture strips follow a curved cheek surface; the center stays at the drop point.
