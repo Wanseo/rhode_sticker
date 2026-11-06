@@ -9,7 +9,7 @@ const patch=new Image();patch.src='assets/eye-patch.svg';
 const packet=$('#packet'),patchTray=$('#patch-tray');
 let packetOpen=false,tearStart=null,patchReadyAt=0;
 let stream, handModel, faceModel, loading, session=0, raf, lastVideo=-1, lastDetect=0;
-let face=[], hands=[], stickers=[], drag=null, pinching=false, trail=[], open=false, pointerId=null, lastHandSeen=0, filmReadyAt=0;
+let face=[], hands=[], stickers=[], drag=null, pinching=false, trail=[], open=false, pointerId=null, lastHandSeen=0, filmReadyAt=0, lastFaceSeen=0;
 const lip=createLip({stage,face:()=>face,message});
 const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
 function message(s){hint.textContent=s;}
@@ -68,6 +68,17 @@ function drop(){
  if(!drag)return;
  const base=basis();
  if(base){
+  if(drag.kind==='patch'||drag.kind==='patch-flipped'){
+   const down={x:face[152].x-face[10].x,y:face[152].y-face[10].y};
+   const length=Math.hypot(down.x,down.y)||1;
+   const targets=[[33,133],[263,362]].map(([a,b])=>({x:(face[a].x+face[b].x)/2+down.x/length*base.size*.18,y:(face[a].y+face[b].y)/2+down.y/length*base.size*.18}));
+   targets.sort((a,b)=>dist(a,drag.p)-dist(b,drag.p));
+   if(dist(targets[0],drag.p)<Math.max(base.size*.38,drag.size*.65)){
+    drag.p=targets[0];
+    drag.kind=drag.p.x<face[168].x?'patch-flipped':'patch';
+   }
+  }
+
   let index=0,nearest=Infinity;face.forEach((p,i)=>{const d=dist(p,drag.p);if(d<nearest){nearest=d;index=i;}});
   const xs=face.map(p=>p.x),ys=face.map(p=>p.y);
   const inside=drag.p.x>=Math.min(...xs)&&drag.p.x<=Math.max(...xs)&&drag.p.y>=Math.min(...ys)&&drag.p.y<=Math.max(...ys);
@@ -96,12 +107,13 @@ async function initModels(){
 }
 function gesture(now){
  if(pointerId!==null)return;
- if(!hands.length){cursor.hidden=true;if(now-lastHandSeen>450){cancelDrag();lip.cancel();pinching=false;trail=[];tearStart=null;}return;}
+ if(!hands.length){cursor.hidden=true;if(now-lastHandSeen>450){if(drag?.kind?.startsWith('patch')&&face.length)drop();else cancelDrag();lip.cancel();pinching=false;trail=[];tearStart=null;}return;}
  lastHandSeen=now;
  const h=hands[0],p={x:(h[4].x+h[8].x)/2,y:(h[4].y+h[8].y)/2};
  cursor.hidden=false;cursor.style.left=p.x+'px';cursor.style.top=p.y+'px';
  const ratio=dist(h[4],h[8])/Math.max(1,dist(h[0],h[9]));
- const next=pinching?ratio<.48:ratio<.30;
+ const releaseRatio=drag?.kind?.startsWith('patch') ? .40 : .48;
+ const next=pinching?ratio<releaseRatio:ratio<.30;
  cursor.classList.toggle('pinching',next);
  if(lip.gesture(p,next,pinching,!!drag)){pinching=next;return;}
  if(!open){
@@ -135,7 +147,9 @@ function render(now){
  if(handModel&&faceModel&&video.readyState>=2&&lastVideo!==video.currentTime&&now-lastDetect>65){
   lastVideo=video.currentTime;lastDetect=now;
   try{
-   face=(faceModel.detectForVideo(video,now).faceLandmarks[0]||[]).map(map);
+   const detectedFace=(faceModel.detectForVideo(video,now).faceLandmarks[0]||[]).map(map);
+   if(detectedFace.length){face=detectedFace;lastFaceSeen=now;}
+   else if(!drag||now-lastFaceSeen>350)face=[];
    hands=handModel.detectForVideo(video,now).landmarks.map(h=>h.map(map));
    tracking.textContent=`${face.length?'Face detected':'Show your face'} · ${hands.length?'Hand detected':'Show your hand'}`;
    gesture(now);
