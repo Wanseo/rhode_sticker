@@ -11,7 +11,7 @@ function message(s){hint.textContent=s;}
 function openCase(){
   if(open)return; open=true; caseButton.classList.add('open');caseButton.setAttribute('aria-expanded','true');
   film.hidden=false;
-  filmReadyAt=performance.now()+1850;
+  filmReadyAt=performance.now()+2350;
   message('딸기를 엄지·검지로 집어 얼굴로 가져간 뒤 손가락을 펴주세요');
 }
 function reset(){stickers=[];drag=null;pinching=false;film.querySelectorAll('button').forEach(b=>b.classList.remove('used'));}
@@ -34,8 +34,7 @@ function map(p){
 }
 function basis(){if(!face.length)return null;const a=face[33],b=face[263];const size=dist(a,b);if(size<10)return null;return{size,angle:Math.atan2(b.y-a.y,b.x-a.x)};}
 function stickerExposed(button){
- const r=button.getBoundingClientRect(), sheet=film.getBoundingClientRect();
- return r.top+r.height/2 < sheet.top+sheet.height*2/3;
+ return open && !film.hidden && !button.classList.contains('used');
 }
 function pick(button,p){if(drag)return;button.classList.add('used');drag={button,p,size:Math.min(48,stage.clientWidth*.0675)};}
 function cancelDrag(){if(drag)drag.button.classList.remove('used');drag=null;}
