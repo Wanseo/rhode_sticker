@@ -107,7 +107,24 @@ export function createRobe(){
    ctx.beginPath();
    const first=face[oval[0]],last=face[oval[oval.length-1]];ctx.moveTo((first.x+last.x)/2,(first.y+last.y)/2);
    oval.forEach((index,i)=>{const p=face[index],next=face[oval[(i+1)%oval.length]];ctx.quadraticCurveTo(p.x,p.y,(p.x+next.x)/2,(p.y+next.y)/2);});
-   ctx.closePath();ctx.fill();ctx.stroke();ctx.restore();
+   ctx.closePath();ctx.fill();ctx.stroke();
+   // Open the back collar below the jaw as well, preserving the real neck.
+   const chin=face[152],forehead=face[10],left=face[234],right=face[454];
+   const faceWidth=Math.hypot(right.x-left.x,right.y-left.y)||1;
+   const faceHeight=Math.hypot(chin.x-forehead.x,chin.y-forehead.y)||1;
+   const rx=(right.x-left.x)/faceWidth,ry=(right.y-left.y)/faceWidth;
+   let dx=-ry,dy=rx;
+   if(dx*(center.x-chin.x)+dy*(center.y-chin.y)<0){dx=-dx;dy=-dy;}
+   const neckLength=Math.max(faceHeight*.18,Math.min(faceHeight*.65,(center.x-chin.x)*dx+(center.y-chin.y)*dy+span*.08));
+   const top={x:chin.x-dx*faceHeight*.1,y:chin.y-dy*faceHeight*.1};
+   const length=neckLength+faceHeight*.1,halfWidth=faceWidth*.29;
+   const edge=(t,w)=>({x:top.x+dx*length*t+rx*halfWidth*w,y:top.y+dy*length*t+ry*halfWidth*w});
+   const a=edge(0,-1),b=edge(.35,-.98),c=edge(.75,-.9),d=edge(1,-1.12);
+   const e=edge(1,1.12),f=edge(.75,.9),g=edge(.35,.98),h=edge(0,1);
+   const tip=edge(1+faceHeight*.35/length,0),lowerLeft=edge(1+faceHeight*.12/length,-1.12),lowerRight=edge(1+faceHeight*.12/length,1.12);
+   ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.bezierCurveTo(b.x,b.y,c.x,c.y,d.x,d.y);
+   ctx.quadraticCurveTo(lowerLeft.x,lowerLeft.y,tip.x,tip.y);ctx.quadraticCurveTo(lowerRight.x,lowerRight.y,e.x,e.y);
+   ctx.bezierCurveTo(f.x,f.y,g.x,g.y,h.x,h.y);ctx.closePath();ctx.fill();ctx.stroke();ctx.restore();
   }
   // Cut the garment away from hands so the live video remains untouched.
   for(const hand of hands){
