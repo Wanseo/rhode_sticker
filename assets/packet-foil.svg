@@ -2,15 +2,11 @@
 <defs>
 <linearGradient id="foil" x1="0" y1="0" x2="1" y2=".7"><stop stop-color="#e3e6e5"/><stop offset=".18" stop-color="#858e90"/><stop offset=".48" stop-color="#d0d5d5"/><stop offset=".73" stop-color="#717c7f"/><stop offset="1" stop-color="#f0f1ed"/></linearGradient>
 <radialGradient id="dent"><stop stop-color="#5c6867" stop-opacity=".47"/><stop offset=".6" stop-color="#687471" stop-opacity=".12"/><stop offset="1" stop-color="#687471" stop-opacity="0"/></radialGradient>
-<linearGradient id="fold"><stop stop-color="#e0e5de" stop-opacity="0"/><stop offset=".45" stop-color="#e0e5de" stop-opacity=".50"/><stop offset=".51" stop-color="#53615f" stop-opacity=".42"/><stop offset="1" stop-color="#85908c" stop-opacity="0"/></linearGradient>
 <pattern id="seal" width="2.5" height="3" patternUnits="userSpaceOnUse"><path d="M0 0v3" stroke="#e0e4db" stroke-opacity=".3" stroke-width=".7"/></pattern>
 </defs>
 <rect width="240" height="330" fill="url(#foil)"/>
 <ellipse cx="47" cy="96" rx="39" ry="25" fill="url(#dent)" transform="rotate(-28 47 96)"/>
 <ellipse cx="183" cy="228" rx="48" ry="31" fill="url(#dent)" transform="rotate(30 183 228)"/>
 <ellipse cx="135" cy="70" rx="40" ry="18" fill="url(#dent)"/>
-<path d="M9 61Q64 94 91 140Q100 155 110 169Q68 134 47 108Z" fill="url(#fold)"/>
-<path d="M228 112Q181 153 172 195L156 236Q160 168 195 133Z" fill="url(#fold)"/>
-<path d="M20 306Q63 272 95 265L132 255Q81 288 59 303Z" fill="url(#fold)"/>
 <path d="M5 8h230v13H5ZM5 309h230v15H5ZM5 8h9v316H5ZM226 8h9v316h-9Z" fill="url(#seal)"/>
 </svg>
