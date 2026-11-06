@@ -14,7 +14,7 @@ export function createNeckProcessor(){
   const fw=Math.max(1,Math.hypot(right.x-left.x,right.y-left.y)),fh=Math.max(1,Math.hypot(chin.x-forehead.x,chin.y-forehead.y));
   const rx=(right.x-left.x)/fw,ry=(right.y-left.y)/fw;
   let dx=-ry,dy=rx;if(dx*(center.x-chin.x)+dy*(center.y-chin.y)<0){dx=-dx;dy=-dy;}
-  const length=Math.max(fh*.2,Math.min(fh*.8,(center.x-chin.x)*dx+(center.y-chin.y)*dy+span*.15));
+  const length=Math.max(fh*.12,Math.min(fh*.45,(center.x-chin.x)*dx+(center.y-chin.y)*dy-span*.06));
   const corners=[[-.12,-.45],[-.12,.45],[length/fh+.24,-.5],[length/fh+.24,.5]].map(([t,w])=>({x:chin.x+dx*fh*t+rx*fw*w,y:chin.y+dy*fh*t+ry*fw*w}));
   const x=Math.max(0,Math.floor(Math.min(...corners.map(p=>p.x)))),y=Math.max(0,Math.floor(Math.min(...corners.map(p=>p.y))));
   const width=Math.min(sw,Math.ceil(Math.max(...corners.map(p=>p.x))))-x,height=Math.min(sh,Math.ceil(Math.max(...corners.map(p=>p.y))))-y;
@@ -46,7 +46,8 @@ export function createNeckProcessor(){
     if(skin)for(let j=0;j<mh;j++)for(let i=0;i<mw;i++){
      const px=x+(i+.5)*width/mw,py=y+(j+.5)*height/mh;
      const ax=(px-chin.x)*rx+(py-chin.y)*ry,ay=(px-chin.x)*dx+(py-chin.y)*dy;
-     if(ay<-.12*fh||ay>length+.22*fh||Math.abs(ax)>fw*(.37+.09*Math.max(0,ay/length)))continue;
+     const taper=Math.max(0,(ay/length-.55)/.45),halfWidth=fw*.37*Math.sqrt(Math.max(0,1-taper*taper));
+     if(ay<-.12*fh||ay>length||Math.abs(ax)>halfWidth)continue;
      const c=color(px,py);if(!c)continue;
      const distance=((c.cb-skin.cb)/16)**2+((c.cr-skin.cr)/19)**2;
      if(distance<1&&c.y>Math.max(15,skin.y*.23))candidate[j*mw+i]=1;

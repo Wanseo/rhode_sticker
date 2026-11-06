@@ -6,7 +6,21 @@ export function createRobe(){
  const fabric=new Image();fabric.decoding='async';
  fabric.onload=()=>{t.drawImage(fabric,0,0,512,512);};
  fabric.src=new URL('./robe-terry-v1.png',import.meta.url).href;
- const torso=new Image();torso.decoding='async';torso.src=new URL('./robe-body-v1.png',import.meta.url).href;
+ const torso=new Image(),collar=new Image(),wrappedTorso=document.createElement('canvas');let wrappedReady=false;
+ function prepareCollar(){
+  if(!torso.naturalWidth||!collar.naturalWidth)return;
+  const w=torso.naturalWidth,h=torso.naturalHeight;
+  wrappedTorso.width=w;wrappedTorso.height=h;const body=wrappedTorso.getContext('2d');body.drawImage(torso,0,0);
+  const patch=document.createElement('canvas');patch.width=w;patch.height=h;const p=patch.getContext('2d');p.drawImage(collar,0,0,w,h);
+  // Blend only the collar and upper chest; shoulders, belt and lower robe stay original.
+  p.globalCompositeOperation='destination-in';
+  const horizontal=p.createLinearGradient(0,0,w,0);horizontal.addColorStop(0,'transparent');horizontal.addColorStop(.22,'transparent');horizontal.addColorStop(.30,'#000');horizontal.addColorStop(.70,'#000');horizontal.addColorStop(.78,'transparent');horizontal.addColorStop(1,'transparent');
+  p.fillStyle=horizontal;p.fillRect(0,0,w,h);
+  const vertical=p.createLinearGradient(0,0,0,h);vertical.addColorStop(0,'#000');vertical.addColorStop(.32,'#000');vertical.addColorStop(.40,'transparent');vertical.addColorStop(1,'transparent');
+  p.fillStyle=vertical;p.fillRect(0,0,w,h);body.drawImage(patch,0,0);wrappedReady=true;
+ }
+ torso.decoding=collar.decoding='async';torso.onload=collar.onload=prepareCollar;
+ torso.src=new URL('./robe-body-v1.png',import.meta.url).href;collar.src=new URL('./robe-collar-v2.png',import.meta.url).href;
  const neckMask=createNeckMask();
  let smooth=[];const armShapes=new Map();
  function reset(){smooth=[];armShapes.clear();neckMask.reset();}
@@ -89,12 +103,13 @@ export function createRobe(){
    cuff.lineTo(end.x-v.x*.16+(b.x-c.x)*.09,end.y-v.y*.16+(b.y-c.y)*.09);
    cuff.lineTo(end.x+v.x*.16+(b.x-c.x)*.09,end.y+v.y*.16+(b.y-c.y)*.09);cuff.closePath();cloth(cuff,true);piping(cuff);drape(cuff,[[end.x+v.x*.16,end.y+v.y*.16,end.x-v.x*.16,end.y-v.y*.16,.035,.22]]);
   }
+  const bodyImage=wrappedReady?wrappedTorso:torso;
   if(torso.complete&&torso.naturalWidth){
    // Split at the tied waist so the photographic folds stay fitted to the body.
    const cropX=torso.naturalWidth*.125,cropWidth=torso.naturalWidth*.75;
    const tieY=torso.naturalHeight*(700/1536),top=-.14;
-   ctx.drawImage(torso,cropX,0,cropWidth,tieY,-.64,top,1.28,waist-top);
-   ctx.drawImage(torso,cropX,tieY,cropWidth,torso.naturalHeight-tieY,-.64,waist,1.28,bottom-waist);
+   ctx.drawImage(bodyImage,cropX,0,cropWidth,tieY,-.64,top,1.28,waist-top);
+   ctx.drawImage(bodyImage,cropX,tieY,cropWidth,torso.naturalHeight-tieY,-.64,waist,1.28,bottom-waist);
   }else{
   const body=new Path2D();body.moveTo(-.58,.05);body.quadraticCurveTo(-.52,-.04,-.2,-.08);body.lineTo(0,.43);body.lineTo(.2,-.08);body.quadraticCurveTo(.52,-.04,.58,.05);body.quadraticCurveTo(.54,waist*.7,.47,waist);body.quadraticCurveTo(.58,waist+.35,.68,bottom);body.lineTo(-.68,bottom);body.quadraticCurveTo(-.58,waist+.35,-.47,waist);body.quadraticCurveTo(-.54,waist*.7,-.58,.05);body.closePath();cloth(body);
   drape(body,[[-.48,.1,-.3,waist,.105,.28],[-.27,.12,-.14,waist,.075,.19],[.47,.06,.27,waist,.12,.27],[.27,.14,.16,waist,.075,.18],[-.3,waist+.07,-.48,bottom,.095,.26],[-.1,waist+.06,-.04,bottom,.08,.2],[.25,waist+.1,.46,bottom,.11,.29],[.08,waist+.08,.16,bottom,.075,.18]]);
@@ -133,13 +148,13 @@ export function createRobe(){
    const rx=(right.x-left.x)/faceWidth,ry=(right.y-left.y)/faceWidth;
    let dx=-ry,dy=rx;
    if(dx*(center.x-chin.x)+dy*(center.y-chin.y)<0){dx=-dx;dy=-dy;}
-   const neckLength=Math.max(faceHeight*.18,Math.min(faceHeight*.65,(center.x-chin.x)*dx+(center.y-chin.y)*dy+span*.08));
+   const neckLength=Math.max(faceHeight*.12,Math.min(faceHeight*.45,(center.x-chin.x)*dx+(center.y-chin.y)*dy-span*.06));
    const top={x:chin.x-dx*faceHeight*.1,y:chin.y-dy*faceHeight*.1};
    const length=neckLength+faceHeight*.1,halfWidth=faceWidth*.29;
    const edge=(t,w)=>({x:top.x+dx*length*t+rx*halfWidth*w,y:top.y+dy*length*t+ry*halfWidth*w});
-   const a=edge(0,-1),b=edge(.35,-.98),c=edge(.75,-.9),d=edge(1,-1.12);
-   const e=edge(1,1.12),f=edge(.75,.9),g=edge(.35,.98),h=edge(0,1);
-   const tip=edge(1+faceHeight*.35/length,0),lowerLeft=edge(1+faceHeight*.12/length,-1.12),lowerRight=edge(1+faceHeight*.12/length,1.12);
+   const a=edge(0,-1),b=edge(.35,-.98),c=edge(.65,-.8),d=edge(.82,-.5);
+   const e=edge(.82,.5),f=edge(.65,.8),g=edge(.35,.98),h=edge(0,1);
+   const tip=edge(1,0),lowerLeft=edge(.95,-.25),lowerRight=edge(.95,.25);
    ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.bezierCurveTo(b.x,b.y,c.x,c.y,d.x,d.y);
    ctx.quadraticCurveTo(lowerLeft.x,lowerLeft.y,tip.x,tip.y);ctx.quadraticCurveTo(lowerRight.x,lowerRight.y,e.x,e.y);
    ctx.bezierCurveTo(f.x,f.y,g.x,g.y,h.x,h.y);ctx.closePath();ctx.fill();ctx.stroke();
