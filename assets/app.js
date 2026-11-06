@@ -68,6 +68,16 @@ function drop(){
  if(!drag)return;
  const base=basis();
  if(base){
+  if(drag.kind==='patch'||drag.kind==='patch-flipped'){
+   const first=stickers.find(s=>s.kind==='patch'||s.kind==='patch-flipped');
+   if(first){
+    const c=Math.cos(base.angle),s=Math.sin(base.angle),anchor=face[first.index];
+    const firstPosition={x:anchor.x+(first.u*c-first.v*s)*base.size,y:anchor.y+(first.u*s+first.v*c)*base.size};
+    // Keep the chosen horizontal position; align height along the face's eye line.
+    const heightDifference=-(drag.p.x-firstPosition.x)*s+(drag.p.y-firstPosition.y)*c;
+    drag.p={x:drag.p.x+heightDifference*s,y:drag.p.y-heightDifference*c};
+   }
+  }
   let index=0,nearest=Infinity;face.forEach((p,i)=>{const d=dist(p,drag.p);if(d<nearest){nearest=d;index=i;}});
   const xs=face.map(p=>p.x),ys=face.map(p=>p.y);
   const inside=drag.p.x>=Math.min(...xs)&&drag.p.x<=Math.max(...xs)&&drag.p.y>=Math.min(...ys)&&drag.p.y<=Math.max(...ys);
