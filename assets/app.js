@@ -68,17 +68,6 @@ function drop(){
  if(!drag)return;
  const base=basis();
  if(base){
-  if(drag.kind==='patch'||drag.kind==='patch-flipped'){
-   const down={x:face[152].x-face[10].x,y:face[152].y-face[10].y};
-   const length=Math.hypot(down.x,down.y)||1;
-   const targets=[[33,133],[263,362]].map(([a,b])=>({x:(face[a].x+face[b].x)/2+down.x/length*base.size*.18,y:(face[a].y+face[b].y)/2+down.y/length*base.size*.18}));
-   targets.sort((a,b)=>dist(a,drag.p)-dist(b,drag.p));
-   if(dist(targets[0],drag.p)<Math.max(base.size*.38,drag.size*.65)){
-    drag.p=targets[0];
-    drag.kind=drag.p.x<face[168].x?'patch-flipped':'patch';
-   }
-  }
-
   let index=0,nearest=Infinity;face.forEach((p,i)=>{const d=dist(p,drag.p);if(d<nearest){nearest=d;index=i;}});
   const xs=face.map(p=>p.x),ys=face.map(p=>p.y);
   const inside=drag.p.x>=Math.min(...xs)&&drag.p.x<=Math.max(...xs)&&drag.p.y>=Math.min(...ys)&&drag.p.y<=Math.max(...ys);
