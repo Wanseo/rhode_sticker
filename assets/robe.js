@@ -36,7 +36,7 @@ export function createRobe(){
   const sourceSpan=Math.hypot(source[1].x-source[0].x,source[1].y-source[0].y),scale=span/sourceSpan;
   const sourceAngle=Math.atan2(source[1].y-source[0].y,source[1].x-source[0].x);
   ctx.save();ctx.globalAlpha=opacity;ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
-  ctx.translate(center.x,center.y);ctx.rotate(fitted.angle-sourceAngle);ctx.scale(scale,scale);
+  ctx.translate(center.x,center.y);ctx.rotate(fitted.angle-sourceAngle);ctx.translate(0,-span*.06);ctx.scale(scale,scale);
   ctx.drawImage(garment,-(source[0].x+source[1].x)/2,-(source[0].y+source[1].y)/2);ctx.restore();
 
   // Preserve existing face/neck and foreground-arm layering on the new PNG.

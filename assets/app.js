@@ -1,4 +1,4 @@
-import { createRobe } from './robe.js?v=approved-full-v1';
+import { createRobe } from './robe.js?v=approved-full-v2';
 import { createLip } from './lip.js';
 import { createRecorder } from './recorder.js';
 const $ = s => document.querySelector(s);
