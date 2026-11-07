@@ -156,8 +156,6 @@ export function createRobe(){
   }
   const knot=new Path2D();knot.ellipse(0,waist+.065,.095,.065,-.25,0,Math.PI*2);cloth(knot,true);
   }
-  // Draw each continuous sleeve once, over the photographed shoulder seam.
-  sleeve(smooth[11],smooth[13],smooth[15]);sleeve(smooth[12],smooth[14],smooth[16]);
   ctx.restore();
   // Preserve the actual face above the raised collar, including the jaw outline.
   if(face.length>454){
