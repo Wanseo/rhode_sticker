@@ -38,7 +38,7 @@ export function createRobe(){
   const hips=[smooth[23],smooth[24]].filter(p=>p.visibility>.45).map(point);
   const waist=hips.length?Math.max(.65,Math.min(1.65,hips.reduce((sum,p)=>sum+p.y,0)/hips.length*.77)):1.05;
   const bottom=Math.max(1.65,...hips.map(p=>p.y+.75));
-  const robeLift=-.23;
+  const robeLift=-.17;
   ctx.save();ctx.translate(center.x,center.y);ctx.rotate(angle);ctx.scale(span,span);ctx.translate(0,robeLift);
   const texture=ctx.createPattern(tile,'repeat');texture.setTransform(new DOMMatrix().scale(.0008));
   function cloth(path,light=false,castShadow=true){
