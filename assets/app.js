@@ -1,6 +1,6 @@
 import { createPacketGesture } from './packet-gesture.js';
-import { createLip } from './lip.js';
-import { createRecorder } from './recorder.js?v=all-assets-v2';
+import { createLip } from './lip.js?v=screen-layout-en-v5';
+import { createRecorder } from './recorder.js?v=screen-layout-en-v5';
 const $ = s => document.querySelector(s);
 const video=$('#video'), stage=$('#stage'), canvas=$('#overlay'), ctx=canvas.getContext('2d');
 const film=$('#film'), caseButton=$('#case'), hint=$('#hint'), tracking=$('#tracking'), cursor=$('#cursor');
@@ -23,12 +23,12 @@ function openCase(){
   if(open)return; open=true; caseButton.classList.add('open');caseButton.setAttribute('aria-expanded','true');
   film.hidden=false;
   filmReadyAt=performance.now()+2350;
-  message('딸기를 엄지·검지로 집어 얼굴로 가져간 뒤 손가락을 펴주세요');
+  message('Pinch a strawberry, move it onto your face, then release to apply.');
 }
 function reset(){lip.reset();stickers=[];drag=null;pinching=false;document.querySelectorAll('#film button, #patch-tray button').forEach(b=>b.classList.remove('used'));}
 for(let i=0;i<9;i++){
  const rear=document.createElement('span');rear.innerHTML='<img src="assets/strawberry.svg" alt="">';$('#rear-film').append(rear);
- const b=document.createElement('button');b.ariaLabel=`딸기 스티커 ${i+1} 집기`;b.innerHTML='<img src="assets/strawberry.svg" alt="딸기">';film.append(b);
+ const b=document.createElement('button');b.ariaLabel=`Pick up strawberry sticker ${i+1}`;b.innerHTML='<img src="assets/strawberry.svg" alt="Strawberry">';film.append(b);
  bindSticker(b);
 }
 function bindSticker(b){
@@ -40,7 +40,7 @@ function bindSticker(b){
 patchTray.querySelectorAll('button').forEach(bindSticker);
 function openPacket(){
  if(packetOpen)return;packetOpen=true;tearStart=null;packet.classList.add('open');packet.setAttribute('aria-expanded','true');patchTray.hidden=false;patchReadyAt=performance.now()+800;
- message('아이패치를 엄지·검지로 집어 눈 아래에 가져간 뒤 손가락을 펴주세요');
+ message('Pinch an eye patch, move it below your eye, then release to apply.');
 }
 packet.addEventListener('click',openPacket);
 packet.addEventListener('pointerdown',e=>{if(packetOpen)return;pointerId=e.pointerId;tearStart={x:e.clientX,y:e.clientY};packet.setPointerCapture(e.pointerId);});
@@ -119,7 +119,7 @@ function drop(){
    drag=null;message('Sticker applied! Pick up another sticker and try it on.');return;
   }
  }
- cancelDrag();message(face.length?'얼굴 위에서 손가락을 펴면 스티커가 붙어요':'얼굴이 카메라에 보이도록 해주세요');
+ cancelDrag();message(face.length?'Release your fingers over your face to apply the sticker.':'Keep your face in view of the camera.');
 }
 async function initModels(){
  if(handModel&&faceModel)return;
@@ -218,7 +218,7 @@ function render(now){
    hands=handModel.detectForVideo(video,now).landmarks.map(h=>h.map(map));
    tracking.textContent=`${face.length?'Face detected':'Show your face'} · ${hands.length?'Hand detected':'Show your hand'}`;
    gesture(now);
-  }catch(e){tracking.textContent='인식이 잠시 멈췄어요. 카메라를 다시 켜주세요';handModel.close();faceModel.close();handModel=faceModel=null;cancelDrag();cursor.hidden=true;}
+  }catch(e){tracking.textContent='Tracking paused. Please reopen the camera.';handModel.close();faceModel.close();handModel=faceModel=null;cancelDrag();cursor.hidden=true;}
  }
  ctx.clearRect(0,0,canvas.width,canvas.height);
  const b=basis();if(b)for(const s of stickers){if(drag?.existing===s)continue;const p=stickerPosition(s,b),draw=s.kind==='berry'?drawSticker:drawFittedPatch;draw(p,s.size*b.size,b.angle-Math.PI,s.kind);}
@@ -231,14 +231,14 @@ function closeCamera(){lip.close();recording.stop();session++;cancelAnimationFra
 $('#start').addEventListener('click',async()=>{
  if($('#start').disabled)return;$('#start').disabled=true;$('#error').hidden=true;const id=++session;
  try{
-  if(!navigator.mediaDevices?.getUserMedia)throw new Error('이 브라우저에서는 카메라를 사용할 수 없어요.');
+  if(!navigator.mediaDevices?.getUserMedia)throw new Error('The camera is not supported in this browser.');
   const acquired=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:960},height:{ideal:720}},audio:false});
   if(id!==session){acquired.getTracks().forEach(t=>t.stop());return;}
   stream=acquired;video.srcObject=stream;await video.play();
-  $('#welcome').hidden=true;$('#camera').hidden=false;tracking.textContent='손·얼굴 인식 준비 중';message('처음에는 인식 모델을 불러오는 데 잠시 걸릴 수 있어요');raf=requestAnimationFrame(render);
-  try{await initModels();if(id!==session)return;message('오른쪽 케이스 위에서 엄지·검지를 집거나, 왼쪽 봉지 위쪽에 손을 잠깐 대주세요.');}
-  catch(e){if(id===session){tracking.textContent='인식 모델을 불러오지 못했어요';message('카메라를 다시 켜서 인식을 재시도해주세요. 케이스 클릭과 스티커 드래그도 가능해요');}}
- }catch(e){if(id===session){closeCamera();$('#error').textContent=e.name==='NotAllowedError'?'카메라 권한을 허용한 뒤 다시 눌러주세요.':e.name==='NotFoundError'?'연결된 카메라가 없어요.':e.message;$('#error').hidden=false;}}
+  $('#welcome').hidden=true;$('#camera').hidden=false;tracking.textContent='Preparing hand and face tracking';message('Tracking models may take a moment to load the first time.');raf=requestAnimationFrame(render);
+  try{await initModels();if(id!==session)return;message('Pinch over the case on the right, or hold your hand near the top of the pouch on the left.');}
+  catch(e){if(id===session){tracking.textContent='Could not load tracking models';message('Reopen the camera to retry tracking. You can also click the case and drag stickers.');}}
+ }catch(e){if(id===session){closeCamera();$('#error').textContent=e.name==='NotAllowedError'?'Allow camera access, then try again.':e.name==='NotFoundError'?'No camera was found.':'Could not start the camera. Please try again.';$('#error').hidden=false;}}
  finally{$('#start').disabled=false;}
 });
 $('#close').addEventListener('click',()=>{closeCamera();$('#start').focus();});window.addEventListener('pagehide',closeCamera);

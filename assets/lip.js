@@ -3,7 +3,7 @@ export function createLip({stage,face: getFace,message}){
  let opened=false,readyAt=0,held=false,pointer=null,previous=null,rub=0,gloss=false,lastTouch=null,heldPoint=null,extrusion=0,drawTime=0;
  const distance=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
  function local(e){const r=stage.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top};}
- function open(){if(opened)return;opened=true;readyAt=performance.now()+850;tube.classList.add('open');tube.setAttribute('aria-expanded','true');tube.setAttribute('aria-label','립 튜브 집어 입술에 바르기');message('열린 튜브를 집어 왼쪽 끝으로 입술을 문지른 뒤 놓아주세요');}
+ function open(){if(opened)return;opened=true;readyAt=performance.now()+850;tube.classList.add('open');tube.setAttribute('aria-expanded','true');tube.setAttribute('aria-label','Pick up the tube and apply to your lips');message('Pick up the open tube, rub its left tip over your lips, then release.');}
  function contains(p){const r=tube.getBoundingClientRect(),s=stage.getBoundingClientRect();return p.x>=r.left-s.left-12&&p.x<=r.right-s.left+12&&p.y>=r.top-s.top-15&&p.y<=r.bottom-s.top+15;}
  function grab(p){if(!opened||performance.now()<readyAt)return false;held=true;previous=null;lastTouch=null;rub=0;tube.classList.add('held');move(p);return true;}
  function move(p){
@@ -21,8 +21,8 @@ export function createLip({stage,face: getFace,message}){
  }
  function release(cancel=false){
   if(!held)return;const f=getFace(),width=f.length?distance(f[61],f[291]):Infinity;
-  if(!cancel&&f.length&&rub>width*.25&&lastTouch!==null&&performance.now()-lastTouch<800){gloss=true;message('입술에 광택이 더해졌어요');}
-  else if(!cancel)message('튜브의 왼쪽 끝으로 입술을 좌우로 문지른 뒤 놓아주세요');
+  if(!cancel&&f.length&&rub>width*.25&&lastTouch!==null&&performance.now()-lastTouch<800){gloss=true;message('Your lips now have a glossy finish.');}
+  else if(!cancel)message('Rub the left tip of the tube across your lips, then release.');
   held=false;heldPoint=null;extrusion=0;previous=null;lastTouch=null;tube.classList.remove('held');tube.style.left='';tube.style.top='';
  }
  tube.addEventListener('click',()=>{if(!opened)open();});
@@ -89,6 +89,6 @@ export function createLip({stage,face: getFace,message}){
   gesture(p,pinch,wasPinch,blocked){if(pointer!==null)return true;if(!held&&blocked)return false;if(!held&&pinch&&!wasPinch&&contains(p)){if(!opened)open();else grab(p);return true;}if(held){if(pinch)move(p);else release();return true;}return false;},
   cancel(){release(true);},draw,
   reset(){release(true);gloss=false;},
-  close(){release(true);gloss=false;opened=false;pointer=null;tube.classList.remove('open');tube.setAttribute('aria-expanded','false');tube.setAttribute('aria-label','립 트리트먼트 뚜껑 열기');}
+  close(){release(true);gloss=false;opened=false;pointer=null;tube.classList.remove('open');tube.setAttribute('aria-expanded','false');tube.setAttribute('aria-label','Open the lip treatment cap');}
  };
 }

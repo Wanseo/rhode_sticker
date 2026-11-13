@@ -1,37 +1,37 @@
 <!doctype html>
-<html lang="ko">
+<html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#f1f0ec"><title>rhode</title>
 <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
 <main>
-<section id="welcome"><button id="start" aria-label="rhode 카메라 켜기"><img class="brand-logo" src="assets/rhode-logo.svg" alt="rhode"></button><p id="error" role="status" hidden></p></section>
-<section id="camera" hidden aria-label="스티커 카메라">
+<section id="welcome"><button id="start" aria-label="Open rhode camera"><img class="brand-logo" src="assets/rhode-logo.svg" alt="rhode"></button><p id="error" role="status" hidden></p></section>
+<section id="camera" hidden aria-label="Sticker camera">
 <div id="stage">
-<video id="video" autoplay muted playsinline></video><canvas id="overlay" aria-label="얼굴 스티커"></canvas>
+<video id="video" autoplay muted playsinline></video><canvas id="overlay" aria-label="Face stickers"></canvas>
 <div id="packet-rig">
-<div id="patch-tray" hidden aria-label="아이패치 두 개">
-<button type="button" data-sticker="patch-flipped" aria-label="왼쪽 아이패치 집기"><img src="assets/eye-patch.svg" alt="아이패치"></button>
-<button type="button" data-sticker="patch" aria-label="오른쪽 아이패치 집기"><img src="assets/eye-patch.svg" alt="아이패치"></button>
+<div id="patch-tray" hidden aria-label="Two eye patches">
+<button type="button" data-sticker="patch-flipped" aria-label="Pick up the left eye patch"><img src="assets/eye-patch.svg" alt="Eye patch"></button>
+<button type="button" data-sticker="patch" aria-label="Pick up the right eye patch"><img src="assets/eye-patch.svg" alt="Eye patch"></button>
 </div>
 <button id="packet" type="button" aria-label="Tear to open" aria-expanded="false"><span class="tear-strip" aria-hidden="true">Tear to open</span><span class="packet-zip" aria-hidden="true"></span><span class="packet-print"><img class="packet-berry" src="assets/packet-strawberry.svg" alt=""><img class="brand-logo" src="assets/rhode-logo-brown.svg" alt="rhode"><span class="packet-title">SPOTWEAR<br>TIMBRES ANTIACNÉ</span><span class="packet-description">hydrocolloid pimple shield<br>patches d’hydrocolloïde anti-boutons</span><span class="packet-count">strawberry<br>36 patches / 36 timbres</span></span></button>
 </div>
 <div id="case-rig">
 <div id="rear-film" class="sticker-sheet" aria-hidden="true"></div>
-<div id="film" class="sticker-sheet" hidden aria-label="딸기 스티커 필름"></div>
-<button id="case" aria-label="스티커 케이스 열기" aria-expanded="false"><span class="lid"><span class="lid-front"><img class="brand-logo" src="assets/rhode-logo-light.svg" alt="rhode"></span><span class="lid-mirror"></span></span><span class="hinge"></span><span class="case-inside"></span><span class="case-body"><span><img class="brand-logo" src="assets/rhode-logo-light.svg" alt="rhode"></span></span></button>
+<div id="film" class="sticker-sheet" hidden aria-label="Strawberry sticker sheet"></div>
+<button id="case" aria-label="Open the sticker case" aria-expanded="false"><span class="lid"><span class="lid-front"><img class="brand-logo" src="assets/rhode-logo-light.svg" alt="rhode"></span><span class="lid-mirror"></span></span><span class="hinge"></span><span class="case-inside"></span><span class="case-body"><span><img class="brand-logo" src="assets/rhode-logo-light.svg" alt="rhode"></span></span></button>
 </div>
-<button id="lip" type="button" aria-label="립 트리트먼트 뚜껑 열기" aria-expanded="false"><span class="lip-tip"></span><span class="lip-body"><img class="brand-logo" src="assets/rhode-logo-light.svg" alt="rhode"><span>PEPTIDE LIP TREATMENT</span></span><span id="lip-cap"></span></button>
+<button id="lip" type="button" aria-label="Open the lip treatment cap" aria-expanded="false"><span class="lip-tip"></span><span class="lip-body"><img class="brand-logo" src="assets/rhode-logo-light.svg" alt="rhode"><span>PEPTIDE LIP TREATMENT</span></span><span id="lip-cap"></span></button>
 <div id="cursor" hidden></div>
-<div class="topline"><span class="wordmark"><img class="brand-logo" src="assets/rhode-logo-light.svg" alt="rhode"></span><span id="tracking" role="status">카메라 준비 중</span></div>
-<button id="record" type="button" aria-label="영상 녹화 시작" aria-pressed="false"><span></span></button>
-<p id="hint" role="status">손과 얼굴 인식을 준비하고 있어요</p>
+<div class="topline"><span class="wordmark"><img class="brand-logo" src="assets/rhode-logo-light.svg" alt="rhode"></span><span id="tracking" role="status">Preparing camera</span></div>
+<button id="record" type="button" aria-label="Start recording" aria-pressed="false"><span></span></button>
+<p id="hint" role="status">Preparing hand and face tracking</p>
 </div>
 <div class="controls"><button id="reset">Clear stickers</button><button id="close">Close camera</button></div>
-<a id="download" hidden>영상 저장</a>
+<a id="download" hidden>Save video</a>
 </section>
 </main>
 <script src="assets/html2canvas.min.js"></script>
-<script type="module" src="assets/app.js?v=case-pinch-v4"></script>
+<script type="module" src="assets/app.js?v=screen-layout-en-v5"></script>
 </body></html>

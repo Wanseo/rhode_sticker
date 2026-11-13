@@ -50,7 +50,7 @@ export function createRecorder({video,stage,overlay,button,download,message}) {
         before:await inlineBackground(pose.before),after:await inlineBackground(pose.after)
       })));
       const image=await html2canvas(stage,{
-        backgroundColor:null,scale:Math.min(3,984/stage.clientWidth),logging:false,foreignObjectRendering:true,
+        backgroundColor:null,scale:Math.max(1,Math.min(3,1080/stage.clientWidth)),logging:false,foreignObjectRendering:true,
         ignoreElements:node=>node.matches?.(excluded),
         onclone:doc=>{
           const clone=doc.getElementById(stage.id);
@@ -80,22 +80,15 @@ export function createRecorder({video,stage,overlay,button,download,message}) {
       if(current===generation)products=image;
     }finally{productsBusy=false;}
   }
-  const logo=new Image();logo.src=new URL('./rhode-logo.svg',import.meta.url).href;
   function drawFrame(){
     if(!captured||video.readyState<2)return;
     const w=output.width,h=output.height;
-    // Fit the entire camera stage into a portrait card, preserving effect coordinates.
-    const frameScale=Math.min((w-96)/stage.clientWidth,(h-480)/stage.clientHeight);
-    const frameWidth=stage.clientWidth*frameScale,frameHeight=stage.clientHeight*frameScale;
-    const x=(w-frameWidth)/2,y=(h-frameHeight)/2;
+    // Preserve the live stage's aspect ratio and logo/product positions.
+    const frameWidth=w,frameHeight=h;
+    const radius=parseFloat(getComputedStyle(stage).borderTopLeftRadius)*w/stage.clientWidth;
     context.fillStyle='#f1f0ec';context.fillRect(0,0,w,h);
-    if(logo.complete&&logo.naturalWidth){
-      const logoWidth=280,logoHeight=logoWidth*logo.naturalHeight/logo.naturalWidth;
-      context.drawImage(logo,(w-logoWidth)/2,(y-logoHeight)/2,logoWidth,logoHeight);
-    }
     context.save();
-    context.beginPath();context.roundRect(x,y,frameWidth,frameHeight,36);context.clip();
-    context.translate(x,y);
+    context.beginPath();context.roundRect(0,0,w,h,radius);context.clip();
     context.fillStyle='#37352e';context.fillRect(0,0,frameWidth,frameHeight);
     const fit=getComputedStyle(video).objectFit==='cover'?Math.max:Math.min;
     const scale=fit(frameWidth/video.videoWidth,frameHeight/video.videoHeight);
@@ -103,7 +96,7 @@ export function createRecorder({video,stage,overlay,button,download,message}) {
     context.save();context.translate(frameWidth,0);context.scale(-1,1);
     context.drawImage(video,(frameWidth-vw)/2,(frameHeight-vh)/2,vw,vh);context.restore();
     if(products)context.drawImage(products,0,0,frameWidth,frameHeight);
-    if(!productsBusy&&performance.now()-lastProducts>=100){lastProducts=performance.now();captureProducts().catch(()=>{failed=true;message('제품 효과를 녹화하지 못했어요. 다시 녹화해주세요.');stop();});}
+    if(!productsBusy&&performance.now()-lastProducts>=100){lastProducts=performance.now();captureProducts().catch(()=>{failed=true;message('Could not capture the product effects. Please record again.');stop();});}
     if(overlay.width&&overlay.height)context.drawImage(overlay,0,0,frameWidth,frameHeight);
     context.restore();
   }
@@ -117,8 +110,8 @@ export function createRecorder({video,stage,overlay,button,download,message}) {
   button.addEventListener('click',async()=>{
     if(recorder){stop();return;}
     if(starting)return;
-    if(!globalThis.MediaRecorder||!output.captureStream){message('이 브라우저는 영상 녹화를 지원하지 않아요. 다른 브라우저에서 시도해주세요.');return;}
-    if(video.readyState<2){message('카메라가 준비되면 다시 눌러주세요.');return;}
+    if(!globalThis.MediaRecorder||!output.captureStream){message('Recording is not supported in this browser. Please try another browser.');return;}
+    if(video.readyState<2){message('Please wait for the camera, then try again.');return;}
     try{
       starting=true;button.disabled=true;
       const startGeneration=++generation;products=null;
@@ -126,33 +119,34 @@ export function createRecorder({video,stage,overlay,button,download,message}) {
       if(!products&&startGeneration===generation)await captureProducts();
       if(startGeneration!==generation||video.readyState<2){button.disabled=false;return;}
       starting=false;button.disabled=false;
-      output.width=1080;
-      output.height=1920;
+      const scale=Math.min(1080/stage.clientWidth,1920/stage.clientHeight);
+      output.width=Math.max(2,Math.round(stage.clientWidth*scale/2)*2);
+      output.height=Math.max(2,Math.round(stage.clientHeight*scale/2)*2);
       captured=output.captureStream(30);drawFrame();
       const mimeType=['video/mp4','video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'].find(t=>MediaRecorder.isTypeSupported(t));
       const current=new MediaRecorder(captured,{...(mimeType?{mimeType}:{}),videoBitsPerSecond:8_000_000});
       const chunks=[];recorder=current;failed=false;
       current.ondataavailable=e=>{if(e.data.size)chunks.push(e.data);};
-      current.onerror=()=>{failed=true;message('녹화 중 오류가 발생했어요. 다시 시도해주세요.');stop();};
+      current.onerror=()=>{failed=true;message('Recording failed. Please try again.');stop();};
       current.onstop=()=>{
         captured?.getTracks().forEach(t=>t.stop());captured=null;recorder=null;
-        button.disabled=false;button.setAttribute('aria-pressed','false');button.setAttribute('aria-label','영상 녹화 시작');
+        button.disabled=false;button.setAttribute('aria-pressed','false');button.setAttribute('aria-label','Start recording');
         if(!failed&&chunks.length){
           if(url)URL.revokeObjectURL(url);
           const type=current.mimeType||chunks[0].type||'video/webm';
           url=URL.createObjectURL(new Blob(chunks,{type}));
           download.href=url;download.download=`rhode-story-${Date.now()}.${type.includes('mp4')?'mp4':'webm'}`;
-          download.textContent='영상 저장 · 1080 × 1920';download.hidden=false;
-          message('녹화가 끝났어요. 아래 영상 저장을 눌러 저장하세요.');
-        }else if(!failed)message('저장할 영상이 없어요. 다시 녹화해주세요.');
+          download.textContent=`Save video · ${output.width} × ${output.height}`;download.hidden=false;
+          message('Recording complete. Select Save video below to download.');
+        }else if(!failed)message('No video was captured. Please record again.');
       };
-      current.start(1000);button.setAttribute('aria-pressed','true');button.setAttribute('aria-label','영상 녹화 중지');
-      message('녹화 중 · 버튼을 다시 누르면 종료돼요');
+      current.start(1000);button.setAttribute('aria-pressed','true');button.setAttribute('aria-label','Stop recording');
+      message('Recording · Press again to stop');
     }catch(e){
       starting=false;
       captured?.getTracks().forEach(t=>t.stop());captured=null;recorder=null;
-      button.disabled=false;button.setAttribute('aria-pressed','false');button.setAttribute('aria-label','영상 녹화 시작');
-      message('녹화를 시작하지 못했어요. 다른 브라우저에서 시도해주세요.');
+      button.disabled=false;button.setAttribute('aria-pressed','false');button.setAttribute('aria-label','Start recording');
+      message('Could not start recording. Please try another browser.');
     }
   });
   return {draw:drawFrame,stop};
