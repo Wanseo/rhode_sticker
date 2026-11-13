@@ -1,5 +1,5 @@
 import { createLip } from './lip.js';
-import { createRecorder } from './recorder.js?v=portrait-v1';
+import { createRecorder } from './recorder.js?v=all-assets-v2';
 const $ = s => document.querySelector(s);
 const video=$('#video'), stage=$('#stage'), canvas=$('#overlay'), ctx=canvas.getContext('2d');
 const film=$('#film'), caseButton=$('#case'), hint=$('#hint'), tracking=$('#tracking'), cursor=$('#cursor');

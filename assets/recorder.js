@@ -1,6 +1,85 @@
 export function createRecorder({video,stage,overlay,button,download,message}) {
   const output=document.createElement('canvas'), context=output.getContext('2d');
   let recorder=null, captured=null, url=null, failed=false;
+  let products=null,productsBusy=false,lastProducts=0,generation=0,starting=false;
+  const imageCache=new Map();
+  async function inlineImage(node){
+    if(!imageCache.has(node.src))imageCache.set(node.src,(async()=>{
+      const image=new Image();image.src=node.src;await image.decode();
+      const canvas=document.createElement('canvas');canvas.width=image.naturalWidth*3;canvas.height=image.naturalHeight*3;
+      canvas.getContext('2d').drawImage(image,0,0,canvas.width,canvas.height);return canvas.toDataURL();
+    })());
+    return imageCache.get(node.src);
+  }
+  const excluded='video,canvas,#cursor';
+  const backgroundCache=new Map();
+  async function inlineBackground(value){
+    const urls=[...value.matchAll(/url\(["']?([^"')]+)["']?\)/g)];
+    for(const [match,url] of urls){
+      if(!backgroundCache.has(url))backgroundCache.set(url,(async()=>{
+        const response=await fetch(url);
+        if(!response.ok)throw new Error('Asset could not be loaded: '+url);
+        const blob=await response.blob();
+        return new Promise((resolve,reject)=>{
+          const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=reject;reader.readAsDataURL(blob);
+        });
+      })());
+      value=value.replace(match,`url("${await backgroundCache.get(url)}")`);
+    }
+    return value;
+  }
+  async function captureProducts(){
+    if(productsBusy)return;
+    productsBusy=true;
+    const current=generation;
+    // Embed CSS images as well as <img> assets: SVG foreignObject cannot fetch them.
+    const originals=[...stage.querySelectorAll('*')].filter(node=>!node.closest(excluded));
+    const poses=originals.map(node=>{
+      const style=getComputedStyle(node);
+      return {transform:style.transform,opacity:style.opacity,visibility:style.visibility,
+        background:style.backgroundImage,before:getComputedStyle(node,'::before').backgroundImage,
+        after:getComputedStyle(node,'::after').backgroundImage};
+    });
+    const lid=stage.querySelector('.lid');
+    const lidFacingFront=!lid||new DOMMatrix(getComputedStyle(lid).transform).m22>=0;
+    try{
+      const images=[...stage.querySelectorAll('img')];
+      const sources=await Promise.all(images.map(inlineImage));
+      const backgrounds=await Promise.all(poses.map(async pose=>({
+        background:await inlineBackground(pose.background),
+        before:await inlineBackground(pose.before),after:await inlineBackground(pose.after)
+      })));
+      const image=await html2canvas(stage,{
+        backgroundColor:null,scale:Math.min(3,984/stage.clientWidth),logging:false,foreignObjectRendering:true,
+        ignoreElements:node=>node.matches?.(excluded),
+        onclone:doc=>{
+          const clone=doc.getElementById(stage.id);
+          Object.assign(clone.style,{background:'transparent',position:'fixed',left:'0',top:'0',margin:'0',width:stage.clientWidth+'px',height:stage.clientHeight+'px'});
+          [...clone.querySelectorAll('img')].forEach(node=>{
+            const i=images.findIndex(original=>original.src===node.src);if(i>=0)node.src=sources[i];
+          });
+          const rules=[];
+          [...clone.querySelectorAll('*')].filter(node=>node.tagName!=='HTML2CANVASPSEUDOELEMENT').forEach((node,i)=>{
+            const pose=poses[i],background=backgrounds[i];if(!pose)return;
+            node.style.animation='none';node.style.transition='none';
+            node.style.transform=pose.transform;node.style.opacity=pose.opacity;node.style.visibility=pose.visibility;
+            node.style.backgroundImage=background.background;
+            node.setAttribute('data-record-node',i);
+            for(const pseudo of ['before','after'])if(background[pseudo]!=='none')rules.push(
+              `[data-record-node="${i}"]::${pseudo}{background-image:${background[pseudo]} !important}`
+            );
+          });
+          // html2canvas inserts pseudo-element nodes; exclude them from the pose mapping.
+          // SVG rasterization flattens 3D layers; explicitly hide the rear lid face.
+          const front=clone.querySelector('.lid-front'),back=clone.querySelector('.lid-mirror');
+          const hiddenFace=lidFacingFront?back:front;
+          if(hiddenFace)for(const node of [hiddenFace,...hiddenFace.querySelectorAll('*')])node.style.visibility='hidden';
+          const style=doc.createElement('style');style.textContent=rules.join('\n');clone.append(style);
+        }
+      });
+      if(current===generation)products=image;
+    }finally{productsBusy=false;}
+  }
   const logo=new Image();logo.src=new URL('./rhode-logo.svg',import.meta.url).href;
   function drawFrame(){
     if(!captured||video.readyState<2)return;
@@ -23,20 +102,30 @@ export function createRecorder({video,stage,overlay,button,download,message}) {
     const vw=video.videoWidth*scale,vh=video.videoHeight*scale;
     context.save();context.translate(frameWidth,0);context.scale(-1,1);
     context.drawImage(video,(frameWidth-vw)/2,(frameHeight-vh)/2,vw,vh);context.restore();
+    if(products)context.drawImage(products,0,0,frameWidth,frameHeight);
+    if(!productsBusy&&performance.now()-lastProducts>=100){lastProducts=performance.now();captureProducts().catch(()=>{failed=true;message('제품 효과를 녹화하지 못했어요. 다시 녹화해주세요.');stop();});}
     if(overlay.width&&overlay.height)context.drawImage(overlay,0,0,frameWidth,frameHeight);
     context.restore();
   }
   function stop(){
+    generation++;starting=false;
     if(recorder&&recorder.state!=='inactive'){
       button.disabled=true;
       recorder.stop();
     }
   }
-  button.addEventListener('click',()=>{
+  button.addEventListener('click',async()=>{
     if(recorder){stop();return;}
+    if(starting)return;
     if(!globalThis.MediaRecorder||!output.captureStream){message('이 브라우저는 영상 녹화를 지원하지 않아요. 다른 브라우저에서 시도해주세요.');return;}
     if(video.readyState<2){message('카메라가 준비되면 다시 눌러주세요.');return;}
     try{
+      starting=true;button.disabled=true;
+      const startGeneration=++generation;products=null;
+      await captureProducts();
+      if(!products&&startGeneration===generation)await captureProducts();
+      if(startGeneration!==generation||video.readyState<2){button.disabled=false;return;}
+      starting=false;button.disabled=false;
       output.width=1080;
       output.height=1920;
       captured=output.captureStream(30);drawFrame();
@@ -60,6 +149,7 @@ export function createRecorder({video,stage,overlay,button,download,message}) {
       current.start(1000);button.setAttribute('aria-pressed','true');button.setAttribute('aria-label','영상 녹화 중지');
       message('녹화 중 · 버튼을 다시 누르면 종료돼요');
     }catch(e){
+      starting=false;
       captured?.getTracks().forEach(t=>t.stop());captured=null;recorder=null;
       button.disabled=false;button.setAttribute('aria-pressed','false');button.setAttribute('aria-label','영상 녹화 시작');
       message('녹화를 시작하지 못했어요. 다른 브라우저에서 시도해주세요.');
