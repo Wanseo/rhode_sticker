@@ -66,7 +66,7 @@ function pick(button,p){
  const kind=button.dataset.sticker||'berry';
  const ratio=kind==='berry'?1.2:.6;
  const rect=button.querySelector('img').getBoundingClientRect();
- const size=Math.min(rect.width,rect.height/ratio);
+ const size=Math.min(rect.width,rect.height/ratio)*(kind.startsWith('patch')?1.2:1);
  button.classList.add('used');drag={button,p,size,kind};
 }
 function stickerPosition(sticker,base=basis()){
