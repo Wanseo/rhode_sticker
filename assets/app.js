@@ -1,11 +1,9 @@
-import { createRobe } from './robe.js?v=approved-full-v3';
 import { createLip } from './lip.js';
 import { createRecorder } from './recorder.js';
 const $ = s => document.querySelector(s);
 const video=$('#video'), stage=$('#stage'), canvas=$('#overlay'), ctx=canvas.getContext('2d');
-const robeCanvas=$('#robe-overlay'),robeContext=robeCanvas.getContext('2d');
 const film=$('#film'), caseButton=$('#case'), hint=$('#hint'), tracking=$('#tracking'), cursor=$('#cursor');
-const recording=createRecorder({video,stage,overlay:canvas,backgroundOverlay:robeCanvas,button:$('#record'),download:$('#download'),message});
+const recording=createRecorder({video,stage,overlay:canvas,button:$('#record'),download:$('#download'),message});
 const berry=new Image(); berry.src='assets/strawberry.svg';
 const patch=new Image();
 const patchTexture=document.createElement('canvas');patchTexture.width=720;patchTexture.height=432;
@@ -14,8 +12,6 @@ patch.onload=()=>{patchTexture.getContext('2d').drawImage(patch,0,0,720,432);pat
 patch.src='assets/eye-patch.svg';
 const packet=$('#packet'),patchTray=$('#patch-tray');
 let packetOpen=false,tearStart=null,patchReadyAt=0;
-let poseWorker,poseReady=false,poseBusy=false,pose=[],lastPoseVideo=-1,lastPoseDetect=0;
-const robe=createRobe();
 let stream, handModel, faceModel, loading, session=0, raf, lastVideo=-1, lastDetect=0;
 let face=[], hands=[], stickers=[], drag=null, pinching=false, trail=[], open=false, pointerId=null, lastHandSeen=0, filmReadyAt=0, lastFaceSeen=0;
 const lip=createLip({stage,face:()=>face,message});
@@ -123,31 +119,7 @@ function drop(){
  }
  cancelDrag();message(face.length?'얼굴 위에서 손가락을 펴면 스티커가 붙어요':'얼굴이 카메라에 보이도록 해주세요');
 }
-function initRobeTracking(){
- if(poseWorker||!globalThis.Worker||!globalThis.createImageBitmap)return;
- const worker=new Worker(new URL('./robe-tracker.js',import.meta.url));
- poseWorker=worker;
- worker.onmessage=({data})=>{
-  if(worker!==poseWorker)return;
-  if(data.type==='ready'){poseReady=true;return;}
-  poseBusy=false;
-  if(data.type==='result'&&data.session===session&&stream)pose=data.landmarks.map(p=>({...map(p),z:p.z??0}));
-  if(data.type==='error'){pose=[];poseReady=false;worker.terminate();poseWorker=null;console.warn('Robe tracking unavailable:',data.message);}
- };
- worker.onerror=()=>{if(worker!==poseWorker)return;pose=[];poseReady=false;poseBusy=false;worker.terminate();poseWorker=null;};
-}
-async function trackRobe(now){
- if(!poseReady||poseBusy||!poseWorker||video.readyState<2||lastPoseVideo===video.currentTime||now-lastPoseDetect<100)return;
- const worker=poseWorker,id=session;
- poseBusy=true;lastPoseVideo=video.currentTime;lastPoseDetect=now;
- try{
-  const frame=await createImageBitmap(video,{resizeWidth:480,resizeHeight:Math.max(1,Math.round(video.videoHeight*480/video.videoWidth))});
-  if(worker!==poseWorker||id!==session||!stream){frame.close();return;}
-  worker.postMessage({type:'frame',frame,timestamp:now,session:id},[frame]);
- }catch(e){if(worker===poseWorker)poseBusy=false;}
-}
 async function initModels(){
- initRobeTracking();
  if(handModel&&faceModel)return;
  if(loading)return loading;
  loading=(async()=>{
@@ -234,30 +206,26 @@ function drawFittedPatch(p,size,angle,kind){
 }
 function render(now){
  if(!stream)return;
- for(const layer of [canvas,robeCanvas])if(layer.width!==stage.clientWidth||layer.height!==stage.clientHeight){layer.width=stage.clientWidth;layer.height=stage.clientHeight;}
+ for(const layer of [canvas])if(layer.width!==stage.clientWidth||layer.height!==stage.clientHeight){layer.width=stage.clientWidth;layer.height=stage.clientHeight;}
  if(handModel&&faceModel&&video.readyState>=2&&lastVideo!==video.currentTime&&now-lastDetect>65){
   lastVideo=video.currentTime;lastDetect=now;
   try{
    const detectedFace=(faceModel.detectForVideo(video,now).faceLandmarks[0]||[]).map(map);
    if(detectedFace.length){face=detectedFace;lastFaceSeen=now;}
    else if(now-lastFaceSeen>650)face=[];
-   robe.captureFrame(video);
    hands=handModel.detectForVideo(video,now).landmarks.map(h=>h.map(map));
    tracking.textContent=`${face.length?'Face detected':'Show your face'} · ${hands.length?'Hand detected':'Show your hand'}`;
    gesture(now);
   }catch(e){tracking.textContent='인식이 잠시 멈췄어요. 카메라를 다시 켜주세요';handModel.close();faceModel.close();handModel=faceModel=null;cancelDrag();cursor.hidden=true;}
  }
- trackRobe(now);
  ctx.clearRect(0,0,canvas.width,canvas.height);
- robeContext.clearRect(0,0,robeCanvas.width,robeCanvas.height);
- robe.draw(robeContext,pose,hands,face,video,stage);
  const b=basis();if(b)for(const s of stickers){if(drag?.existing===s)continue;const p=stickerPosition(s,b),draw=s.kind==='berry'?drawSticker:drawFittedPatch;draw(p,s.size*b.size,b.angle-Math.PI,s.kind);}
  if(drag)drawSticker(drag.p,drag.size,drag.angle||0,drag.kind);
  lip.draw(ctx,now);
  recording.draw();
  raf=requestAnimationFrame(render);
 }
-function closeCamera(){poseWorker?.terminate();poseWorker=null;poseReady=false;poseBusy=false;robe.reset();pose=[];lastPoseVideo=-1;lip.close();recording.stop();session++;cancelAnimationFrame(raf);stream?.getTracks().forEach(t=>t.stop());stream=null;video.srcObject=null;$('#camera').hidden=true;$('#welcome').hidden=false;cursor.hidden=true;reset();face=[];hands=[];trail=[];open=false;caseButton.classList.remove('open');caseButton.setAttribute('aria-expanded','false');film.hidden=true;packetOpen=false;tearStart=null;packet.classList.remove('open');packet.setAttribute('aria-expanded','false');patchTray.hidden=true;pointerId=null;lastVideo=-1;}
+function closeCamera(){lip.close();recording.stop();session++;cancelAnimationFrame(raf);stream?.getTracks().forEach(t=>t.stop());stream=null;video.srcObject=null;$('#camera').hidden=true;$('#welcome').hidden=false;cursor.hidden=true;reset();face=[];hands=[];trail=[];open=false;caseButton.classList.remove('open');caseButton.setAttribute('aria-expanded','false');film.hidden=true;packetOpen=false;tearStart=null;packet.classList.remove('open');packet.setAttribute('aria-expanded','false');patchTray.hidden=true;pointerId=null;lastVideo=-1;}
 $('#start').addEventListener('click',async()=>{
  if($('#start').disabled)return;$('#start').disabled=true;$('#error').hidden=true;const id=++session;
  try{
