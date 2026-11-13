@@ -1,3 +1,4 @@
+import { createPacketGesture } from './packet-gesture.js';
 import { createLip } from './lip.js';
 import { createRecorder } from './recorder.js?v=all-assets-v2';
 const $ = s => document.querySelector(s);
@@ -11,6 +12,7 @@ let patchTextureReady=false;
 patch.onload=()=>{patchTexture.getContext('2d').drawImage(patch,0,0,720,432);patchTextureReady=true;};
 patch.src='assets/eye-patch.svg';
 const packet=$('#packet'),patchTray=$('#patch-tray');
+const packetGesture=createPacketGesture();
 let packetOpen=false,tearStart=null,patchReadyAt=0;
 let stream, handModel, faceModel, loading, session=0, raf, lastVideo=-1, lastDetect=0;
 let face=[], hands=[], stickers=[], drag=null, pinching=false, trail=[], open=false, pointerId=null, lastHandSeen=0, filmReadyAt=0, lastFaceSeen=0;
@@ -137,7 +139,7 @@ async function initModels(){
 }
 function gesture(now){
  if(pointerId!==null)return;
- if(!hands.length){cursor.hidden=true;if(now-lastHandSeen>450){if(drag?.kind?.startsWith('patch')&&face.length)drop();else cancelDrag();lip.cancel();pinching=false;trail=[];tearStart=null;}return;}
+ if(!hands.length){packetGesture.reset();cursor.hidden=true;if(now-lastHandSeen>450){if(drag?.kind?.startsWith('patch')&&face.length)drop();else cancelDrag();lip.cancel();pinching=false;trail=[];tearStart=null;}return;}
  lastHandSeen=now;
  const h=hands[0],p={x:(h[4].x+h[8].x)/2,y:(h[4].y+h[8].y)/2};
  cursor.hidden=false;cursor.style.left=p.x+'px';cursor.style.top=p.y+'px';
@@ -155,9 +157,10 @@ function gesture(now){
  }
  if(!packetOpen){
   const r=packet.getBoundingClientRect(),s=stage.getBoundingClientRect();
-  if(next&&!pinching&&p.x>=r.left-s.left-12&&p.x<=r.right-s.left+12&&p.y>=r.top-s.top-15&&p.y<=r.top-s.top+r.height*.25)tearStart={...p};
-  if(next&&tearStart&&dist(p,tearStart)>Math.max(24,stage.clientWidth*.035))openPacket();
-  if(!next)tearStart=null;
+  const bounds={left:r.left-s.left,right:r.right-s.left,top:r.top-s.top,width:r.width,height:r.height};
+  if(packetGesture.update({hand:h,pinch:next,now,bounds,blocked:!!drag})){
+   openPacket();pinching=next;return;
+  }
  }
  if(next&&!pinching&&!drag){
   for(const b of document.querySelectorAll('#film button:not(.used), #patch-tray button:not(.used)')){if(!stickerExposed(b))continue;const r=b.getBoundingClientRect(),s=stage.getBoundingClientRect();if(p.x>=r.left-s.left-10&&p.x<=r.right-s.left+10&&p.y>=r.top-s.top-10&&p.y<=r.bottom-s.top+10){pick(b,p);break;}}
@@ -225,7 +228,7 @@ function render(now){
  recording.draw();
  raf=requestAnimationFrame(render);
 }
-function closeCamera(){lip.close();recording.stop();session++;cancelAnimationFrame(raf);stream?.getTracks().forEach(t=>t.stop());stream=null;video.srcObject=null;$('#camera').hidden=true;$('#welcome').hidden=false;cursor.hidden=true;reset();face=[];hands=[];trail=[];open=false;caseButton.classList.remove('open');caseButton.setAttribute('aria-expanded','false');film.hidden=true;packetOpen=false;tearStart=null;packet.classList.remove('open');packet.setAttribute('aria-expanded','false');patchTray.hidden=true;pointerId=null;lastVideo=-1;}
+function closeCamera(){lip.close();recording.stop();session++;cancelAnimationFrame(raf);stream?.getTracks().forEach(t=>t.stop());stream=null;video.srcObject=null;$('#camera').hidden=true;$('#welcome').hidden=false;cursor.hidden=true;reset();face=[];hands=[];trail=[];open=false;caseButton.classList.remove('open');caseButton.setAttribute('aria-expanded','false');film.hidden=true;packetOpen=false;tearStart=null;packetGesture.reset();packet.classList.remove('open');packet.setAttribute('aria-expanded','false');patchTray.hidden=true;pointerId=null;lastVideo=-1;}
 $('#start').addEventListener('click',async()=>{
  if($('#start').disabled)return;$('#start').disabled=true;$('#error').hidden=true;const id=++session;
  try{
@@ -234,7 +237,7 @@ $('#start').addEventListener('click',async()=>{
   if(id!==session){acquired.getTracks().forEach(t=>t.stop());return;}
   stream=acquired;video.srcObject=stream;await video.play();
   $('#welcome').hidden=true;$('#camera').hidden=false;tracking.textContent='손·얼굴 인식 준비 중';message('처음에는 인식 모델을 불러오는 데 잠시 걸릴 수 있어요');raf=requestAnimationFrame(render);
-  try{await initModels();if(id!==session)return;message('Open the case on the right, or pinch and tear open the pouch on the left.');}
+  try{await initModels();if(id!==session)return;message('오른쪽 케이스를 열거나, 왼쪽 봉지 위쪽에 손을 잠깐 대주세요.');}
   catch(e){if(id===session){tracking.textContent='인식 모델을 불러오지 못했어요';message('카메라를 다시 켜서 인식을 재시도해주세요. 케이스 클릭과 스티커 드래그도 가능해요');}}
  }catch(e){if(id===session){closeCamera();$('#error').textContent=e.name==='NotAllowedError'?'카메라 권한을 허용한 뒤 다시 눌러주세요.':e.name==='NotFoundError'?'연결된 카메라가 없어요.':e.message;$('#error').hidden=false;}}
  finally{$('#start').disabled=false;}
