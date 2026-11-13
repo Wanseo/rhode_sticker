@@ -1,6 +1,6 @@
 import { createPacketGesture } from './packet-gesture.js';
-import { createLip } from './lip.js?v=screen-layout-en-v5';
-import { createRecorder } from './recorder.js?v=screen-layout-en-v5';
+import { createLip } from './lip.js?v=story-layout-en-v6';
+import { createRecorder } from './recorder.js?v=story-layout-en-v6';
 const $ = s => document.querySelector(s);
 const video=$('#video'), stage=$('#stage'), canvas=$('#overlay'), ctx=canvas.getContext('2d');
 const film=$('#film'), caseButton=$('#case'), hint=$('#hint'), tracking=$('#tracking'), cursor=$('#cursor');

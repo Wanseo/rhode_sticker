@@ -80,15 +80,22 @@ export function createRecorder({video,stage,overlay,button,download,message}) {
       if(current===generation)products=image;
     }finally{productsBusy=false;}
   }
+  const logo=new Image();logo.src=new URL('./rhode-logo.svg',import.meta.url).href;
   function drawFrame(){
     if(!captured||video.readyState<2)return;
     const w=output.width,h=output.height;
-    // Preserve the live stage's aspect ratio and logo/product positions.
-    const frameWidth=w,frameHeight=h;
-    const radius=parseFloat(getComputedStyle(stage).borderTopLeftRadius)*w/stage.clientWidth;
+    // Keep the complete live stage inside the cream Instagram Story card.
+    const frameScale=Math.min((w-96)/stage.clientWidth,(h-480)/stage.clientHeight);
+    const frameWidth=stage.clientWidth*frameScale,frameHeight=stage.clientHeight*frameScale;
+    const x=(w-frameWidth)/2,y=(h-frameHeight)/2;
     context.fillStyle='#f1f0ec';context.fillRect(0,0,w,h);
+    if(logo.complete&&logo.naturalWidth){
+      const logoWidth=280,logoHeight=logoWidth*logo.naturalHeight/logo.naturalWidth;
+      context.drawImage(logo,(w-logoWidth)/2,(y-logoHeight)/2,logoWidth,logoHeight);
+    }
     context.save();
-    context.beginPath();context.roundRect(0,0,w,h,radius);context.clip();
+    context.beginPath();context.roundRect(x,y,frameWidth,frameHeight,36);context.clip();
+    context.translate(x,y);
     context.fillStyle='#37352e';context.fillRect(0,0,frameWidth,frameHeight);
     const fit=getComputedStyle(video).objectFit==='cover'?Math.max:Math.min;
     const scale=fit(frameWidth/video.videoWidth,frameHeight/video.videoHeight);
@@ -119,9 +126,8 @@ export function createRecorder({video,stage,overlay,button,download,message}) {
       if(!products&&startGeneration===generation)await captureProducts();
       if(startGeneration!==generation||video.readyState<2){button.disabled=false;return;}
       starting=false;button.disabled=false;
-      const scale=Math.min(1080/stage.clientWidth,1920/stage.clientHeight);
-      output.width=Math.max(2,Math.round(stage.clientWidth*scale/2)*2);
-      output.height=Math.max(2,Math.round(stage.clientHeight*scale/2)*2);
+      output.width=1080;
+      output.height=1920;
       captured=output.captureStream(30);drawFrame();
       const mimeType=['video/mp4','video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'].find(t=>MediaRecorder.isTypeSupported(t));
       const current=new MediaRecorder(captured,{...(mimeType?{mimeType}:{}),videoBitsPerSecond:8_000_000});
