@@ -15,7 +15,7 @@ const packet=$('#packet'),patchTray=$('#patch-tray');
 const packetGesture=createPacketGesture();
 let packetOpen=false,tearStart=null,patchReadyAt=0;
 let stream, handModel, faceModel, loading, session=0, raf, lastVideo=-1, lastDetect=0;
-let face=[], hands=[], stickers=[], drag=null, pinching=false, trail=[], open=false, pointerId=null, lastHandSeen=0, filmReadyAt=0, lastFaceSeen=0;
+let face=[], hands=[], stickers=[], drag=null, pinching=false, open=false, pointerId=null, lastHandSeen=0, filmReadyAt=0, lastFaceSeen=0;
 const lip=createLip({stage,face:()=>face,message});
 const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
 function message(s){hint.textContent=s;}
@@ -139,7 +139,7 @@ async function initModels(){
 }
 function gesture(now){
  if(pointerId!==null)return;
- if(!hands.length){packetGesture.reset();cursor.hidden=true;if(now-lastHandSeen>450){if(drag?.kind?.startsWith('patch')&&face.length)drop();else cancelDrag();lip.cancel();pinching=false;trail=[];tearStart=null;}return;}
+ if(!hands.length){packetGesture.reset();cursor.hidden=true;if(now-lastHandSeen>450){if(drag?.kind?.startsWith('patch')&&face.length)drop();else cancelDrag();lip.cancel();pinching=false;tearStart=null;}return;}
  lastHandSeen=now;
  const h=hands[0],p={x:(h[4].x+h[8].x)/2,y:(h[4].y+h[8].y)/2};
  cursor.hidden=false;cursor.style.left=p.x+'px';cursor.style.top=p.y+'px';
@@ -149,11 +149,10 @@ function gesture(now){
  cursor.classList.toggle('pinching',next);
  if(next&&!pinching&&!drag)pickPlaced(p);
  if(lip.gesture(p,next,pinching,!!drag)){pinching=next;return;}
- if(!open){
-  const palm=h[9],r=caseButton.getBoundingClientRect(),q=stage.getBoundingClientRect();
-  trail.push({x:palm.x,y:palm.y,t:now});trail=trail.filter(p=>now-p.t<650);
-  const near=palm.x>r.left-q.left-70&&palm.y>r.top-q.top-100&&palm.y<r.bottom-q.top+70;
-  if(near&&trail.length>3&&trail.some(t=>dist(t,palm)>Math.max(35,stage.clientWidth*.07))&&!next)openCase();
+ if(!open&&next&&!pinching&&!drag){
+  const r=caseButton.getBoundingClientRect(),q=stage.getBoundingClientRect();
+  const inside=p.x>=r.left-q.left&&p.x<=r.right-q.left&&p.y>=r.top-q.top&&p.y<=r.bottom-q.top;
+  if(inside){openCase();pinching=next;return;}
  }
  if(!packetOpen){
   const r=packet.getBoundingClientRect(),s=stage.getBoundingClientRect();
@@ -228,7 +227,7 @@ function render(now){
  recording.draw();
  raf=requestAnimationFrame(render);
 }
-function closeCamera(){lip.close();recording.stop();session++;cancelAnimationFrame(raf);stream?.getTracks().forEach(t=>t.stop());stream=null;video.srcObject=null;$('#camera').hidden=true;$('#welcome').hidden=false;cursor.hidden=true;reset();face=[];hands=[];trail=[];open=false;caseButton.classList.remove('open');caseButton.setAttribute('aria-expanded','false');film.hidden=true;packetOpen=false;tearStart=null;packetGesture.reset();packet.classList.remove('open');packet.setAttribute('aria-expanded','false');patchTray.hidden=true;pointerId=null;lastVideo=-1;}
+function closeCamera(){lip.close();recording.stop();session++;cancelAnimationFrame(raf);stream?.getTracks().forEach(t=>t.stop());stream=null;video.srcObject=null;$('#camera').hidden=true;$('#welcome').hidden=false;cursor.hidden=true;reset();face=[];hands=[];open=false;caseButton.classList.remove('open');caseButton.setAttribute('aria-expanded','false');film.hidden=true;packetOpen=false;tearStart=null;packetGesture.reset();packet.classList.remove('open');packet.setAttribute('aria-expanded','false');patchTray.hidden=true;pointerId=null;lastVideo=-1;}
 $('#start').addEventListener('click',async()=>{
  if($('#start').disabled)return;$('#start').disabled=true;$('#error').hidden=true;const id=++session;
  try{
@@ -237,7 +236,7 @@ $('#start').addEventListener('click',async()=>{
   if(id!==session){acquired.getTracks().forEach(t=>t.stop());return;}
   stream=acquired;video.srcObject=stream;await video.play();
   $('#welcome').hidden=true;$('#camera').hidden=false;tracking.textContent='손·얼굴 인식 준비 중';message('처음에는 인식 모델을 불러오는 데 잠시 걸릴 수 있어요');raf=requestAnimationFrame(render);
-  try{await initModels();if(id!==session)return;message('오른쪽 케이스를 열거나, 왼쪽 봉지 위쪽에 손을 잠깐 대주세요.');}
+  try{await initModels();if(id!==session)return;message('오른쪽 케이스 위에서 엄지·검지를 집거나, 왼쪽 봉지 위쪽에 손을 잠깐 대주세요.');}
   catch(e){if(id===session){tracking.textContent='인식 모델을 불러오지 못했어요';message('카메라를 다시 켜서 인식을 재시도해주세요. 케이스 클릭과 스티커 드래그도 가능해요');}}
  }catch(e){if(id===session){closeCamera();$('#error').textContent=e.name==='NotAllowedError'?'카메라 권한을 허용한 뒤 다시 눌러주세요.':e.name==='NotFoundError'?'연결된 카메라가 없어요.':e.message;$('#error').hidden=false;}}
  finally{$('#start').disabled=false;}
