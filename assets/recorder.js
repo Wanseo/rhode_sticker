@@ -1,16 +1,30 @@
 export function createRecorder({video,stage,overlay,button,download,message}) {
   const output=document.createElement('canvas'), context=output.getContext('2d');
   let recorder=null, captured=null, url=null, failed=false;
+  const logo=new Image();logo.src=new URL('./rhode-logo.svg',import.meta.url).href;
   function drawFrame(){
     if(!captured||video.readyState<2)return;
     const w=output.width,h=output.height;
+    // Fit the entire camera stage into a portrait card, preserving effect coordinates.
+    const frameScale=Math.min((w-96)/stage.clientWidth,(h-480)/stage.clientHeight);
+    const frameWidth=stage.clientWidth*frameScale,frameHeight=stage.clientHeight*frameScale;
+    const x=(w-frameWidth)/2,y=(h-frameHeight)/2;
+    context.fillStyle='#f1f0ec';context.fillRect(0,0,w,h);
+    if(logo.complete&&logo.naturalWidth){
+      const logoWidth=280,logoHeight=logoWidth*logo.naturalHeight/logo.naturalWidth;
+      context.drawImage(logo,(w-logoWidth)/2,(y-logoHeight)/2,logoWidth,logoHeight);
+    }
+    context.save();
+    context.beginPath();context.roundRect(x,y,frameWidth,frameHeight,36);context.clip();
+    context.translate(x,y);
+    context.fillStyle='#37352e';context.fillRect(0,0,frameWidth,frameHeight);
     const fit=getComputedStyle(video).objectFit==='cover'?Math.max:Math.min;
-    const scale=fit(w/video.videoWidth,h/video.videoHeight);
+    const scale=fit(frameWidth/video.videoWidth,frameHeight/video.videoHeight);
     const vw=video.videoWidth*scale,vh=video.videoHeight*scale;
-    context.fillStyle='#37352e';context.fillRect(0,0,w,h);
-    context.save();context.translate(w,0);context.scale(-1,1);
-    context.drawImage(video,(w-vw)/2,(h-vh)/2,vw,vh);context.restore();
-    if(overlay.width&&overlay.height)context.drawImage(overlay,0,0,w,h);
+    context.save();context.translate(frameWidth,0);context.scale(-1,1);
+    context.drawImage(video,(frameWidth-vw)/2,(frameHeight-vh)/2,vw,vh);context.restore();
+    if(overlay.width&&overlay.height)context.drawImage(overlay,0,0,frameWidth,frameHeight);
+    context.restore();
   }
   function stop(){
     if(recorder&&recorder.state!=='inactive'){
@@ -23,11 +37,11 @@ export function createRecorder({video,stage,overlay,button,download,message}) {
     if(!globalThis.MediaRecorder||!output.captureStream){message('이 브라우저는 영상 녹화를 지원하지 않아요. 다른 브라우저에서 시도해주세요.');return;}
     if(video.readyState<2){message('카메라가 준비되면 다시 눌러주세요.');return;}
     try{
-      output.width=Math.max(2,Math.round(stage.clientWidth/2)*2);
-      output.height=Math.max(2,Math.round(stage.clientHeight/2)*2);
+      output.width=1080;
+      output.height=1920;
       captured=output.captureStream(30);drawFrame();
       const mimeType=['video/mp4','video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'].find(t=>MediaRecorder.isTypeSupported(t));
-      const current=new MediaRecorder(captured,mimeType?{mimeType}:{});
+      const current=new MediaRecorder(captured,{...(mimeType?{mimeType}:{}),videoBitsPerSecond:8_000_000});
       const chunks=[];recorder=current;failed=false;
       current.ondataavailable=e=>{if(e.data.size)chunks.push(e.data);};
       current.onerror=()=>{failed=true;message('녹화 중 오류가 발생했어요. 다시 시도해주세요.');stop();};
@@ -38,8 +52,8 @@ export function createRecorder({video,stage,overlay,button,download,message}) {
           if(url)URL.revokeObjectURL(url);
           const type=current.mimeType||chunks[0].type||'video/webm';
           url=URL.createObjectURL(new Blob(chunks,{type}));
-          download.href=url;download.download=`rhode-${Date.now()}.${type.includes('mp4')?'mp4':'webm'}`;
-          download.textContent='영상 저장';download.hidden=false;
+          download.href=url;download.download=`rhode-story-${Date.now()}.${type.includes('mp4')?'mp4':'webm'}`;
+          download.textContent='영상 저장 · 1080 × 1920';download.hidden=false;
           message('녹화가 끝났어요. 아래 영상 저장을 눌러 저장하세요.');
         }else if(!failed)message('저장할 영상이 없어요. 다시 녹화해주세요.');
       };
